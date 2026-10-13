@@ -16,6 +16,7 @@ import { writeSave, type SaveKind } from '@/lib/saves';
 import { useSettings } from './settings';
 import { dateFromDay } from '@/game/calendar';
 import { playSound } from '@/lib/audio';
+import { asset } from '@/lib/base';
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -93,7 +94,7 @@ export const useGame = create<GameStore>()((set, get) => ({
     if (readyPromise) return readyPromise;
     set({ status: 'loading', loadingText: 'loading.map' });
     readyPromise = (async () => {
-      const [wRes, gRes] = await Promise.all([fetch('/data/world.json'), fetch('/data/world-geo.json')]);
+      const [wRes, gRes] = await Promise.all([fetch(asset('/data/world.json')), fetch(asset('/data/world-geo.json'))]);
       if (!wRes.ok || !gRes.ok) throw new Error('Harita verisi yüklenemedi');
       const worldData = (await wRes.json()) as WorldData;
       const geo = (await gRes.json()) as GeoData;

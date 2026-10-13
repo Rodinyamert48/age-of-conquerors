@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes
 import { create } from 'zustand';
 import { X } from 'lucide-react';
 import { playSound } from '@/lib/audio';
+import { asset } from '@/lib/base';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -42,8 +43,10 @@ export function Button({
 }
 
 export function Flag({ code, className = '', title }: { code: string; className?: string; title?: string }) {
-  const src = code.startsWith('x-') ? `/flags-custom/${code.slice(2)}.svg` : `/flags/${code}.svg`;
-  return <span role="img" aria-label={title} title={title} className={`flag ${className}`} style={{ backgroundImage: `url(${src})`, aspectRatio: '4 / 3' }} />;
+  const src = asset(code.startsWith('x-') ? `/flags-custom/${code.slice(2)}.svg` : `/flags/${code}.svg`);
+  // Bayrak dosyası yoksa alttaki genel bayrak görünür
+  const fallback = asset('/flags-custom/unknown.svg');
+  return <span role="img" aria-label={title} title={title} className={`flag ${className}`} style={{ backgroundImage: `url(${src}), url(${fallback})`, aspectRatio: '4 / 3' }} />;
 }
 
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {

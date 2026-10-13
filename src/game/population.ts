@@ -66,6 +66,8 @@ export function populationTick(ctx: Ctx, dt: number, monthChanged: boolean): voi
     const d = developmentRate(ctx, c) / 12;
     let totalOut = 0;
     let totalPop = 0;
+    let coreOut = 0;
+    let corePop = 0;
     for (const p of provincesOf(ctx, c.tag)) {
       const ps = s.provinces[p];
       let pg = g + ps.buildings[B_AGRI] * 0.002 / 12;
@@ -79,7 +81,13 @@ export function populationTick(ctx: Ctx, dt: number, monthChanged: boolean): voi
       ps.output = Math.max(0.0001, ps.output * ratio * (1 + pd));
       totalOut += ps.output;
       totalPop += ps.pop;
+      if (ps.cores.includes(c.tag)) {
+        coreOut += ps.output;
+        corePop += ps.pop;
+      }
     }
-    if (totalPop > 0) c.wealth = totalOut / totalPop;
+    // Kişi başı servet: çekirdek bölgeler (yoksa tüm bölgeler)
+    if (corePop > 0) c.wealth = coreOut / corePop;
+    else if (totalPop > 0) c.wealth = totalOut / totalPop;
   }
 }

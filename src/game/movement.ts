@@ -399,7 +399,8 @@ export function supplyLimit(ctx: Ctx, p: number, tag: Tag): number {
   const terr = TERRAIN_DEFS[w.terrain[p]];
   const mods = getMods(ctx, tag);
   const b = ps.buildings;
-  const base = (BAL.combatWidth[s.meta.era] ?? 60000) * 0.2 + ps.pop * 0.08;
+  // Nüfus dönem ölçeğiyle normalize edilir (modern: 1); böylece 1914'ün demiryolu orduları da beslenebilir
+  const base = (BAL.combatWidth[s.meta.era] ?? 60000) * 0.2 + (ps.pop * 0.08) / Math.max(0.1, s.meta.popScale || 1);
   let own = 1;
   if (ps.controller !== tag) {
     if (isFriendly(ctx, tag, ps.controller)) own = 0.85;

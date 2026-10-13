@@ -21,6 +21,14 @@ const registry: Record<string, VictoryFn> = {
     const econ = mine >= third ? 1 : mine / Math.max(1e-9, third);
     return Math.min(1, Math.min(provRatio, econ));
   },
+  /** 1914: bölge sayını %25 artır ve barış içinde ol */
+  s1914: (ctx) => {
+    const { s } = ctx;
+    if (!s.countries[s.player]?.alive) return 0;
+    const provRatio = provincesOf(ctx, s.player).length / Math.max(1, s.meta.playerStartProvinces * 1.25);
+    const atWar = Object.values(s.wars).some((w) => w.attackers.includes(s.player) || w.defenders.includes(s.player));
+    return Math.min(atWar ? 0.99 : 1, provRatio);
+  },
 };
 
 export function getScenarioVictory(id: string): VictoryFn | undefined {

@@ -10,7 +10,8 @@ import { addRelation, atWar, enemiesOf, isAtWar, REBEL_TAG, relation, warSide } 
 import { chance, weightedPick, pick } from './rng';
 import { notify, newId } from './notify';
 import { dateFromDay, parseDate, yearOf } from './calendar';
-import { declareWar, joinWar, transferProvince, removeTreaties, applyPeace } from './war';
+import { declareWar, joinWar, transferProvince, removeTreaties, applyPeace, releaseNation } from './war';
+import { createArmy } from './construction';
 import { addTreatyIfMissing } from './diplomacy';
 import { maxManpower } from './population';
 import { techCost } from './construction';
@@ -69,7 +70,10 @@ export type Effect =
   | { spawnRebels: number }
   | { government: GovernmentType }
   | { policy: { id: PolicyId; delta: number } }
-  | { food: number };
+  | { food: number }
+  /** Ülkenin topraklarındaki çekirdeklerden ulusları bağımsız kılar; joinWarsOf verilirse bu ülkenin
+   *  (olay sahibine karşı) savaşlarına onun safında katılırlar */
+  | { releaseNations: { tags: string[]; joinWarsOf?: string } };
 
 export interface EventOption {
   text: Localized;
@@ -272,6 +276,22 @@ export function applyEffects(ctx: Ctx, tag: Tag, effects: Effect[], target?: Tag
       c.policies[e.policy.id] = Math.max(0, Math.min(4, c.policies[e.policy.id] + e.policy.delta));
     } else if ('food' in e) {
       c.resources.stock.food = Math.max(0, c.resources.stock.food + e.food * c.resources.consumption.food);
+    } else if ('releaseNations' in e) {
+      for (const n of e.releaseNations.tags) {
+        const nc = s.countries[n];
+        if (!nc || nc.alive) continue;
+        if (!releaseNation(ctx, n, tag)) continue;
+        // Yeni devletin çekirdek kuvveti
+        const provs = provincesOf(ctx, n);
+        const people = provs.reduce((a, p) => a + s.provinces[p].pop, 0);
+        if (nc.capital >= 0) createArmy(ctx, n, nc.capital, { infantry: Math.round(Math.max(5000, Math.min(80000, people * 0.004)) / 1000) * 1000 }, { morale: 0.8 });
+        const ally = e.releaseNations.joinWarsOf;
+        if (!ally) continue;
+        for (const w of Object.values(s.wars)) {
+          const side = warSide(w, ally);
+          if (side && warSide(w, tag) && warSide(w, tag) !== side) joinWar(ctx, w, n, side);
+        }
+      }
     }
   }
 }

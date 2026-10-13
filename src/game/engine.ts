@@ -171,7 +171,8 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
   };
   for (let p = 0; p < P; p++) {
     const owner = setup.owner[p];
-    const cores = [owner, ...(setup.extraCores?.[p] ?? [])].filter((t, i, arr) => arr.indexOf(t) === i);
+    const colonial = !!setup.colonial?.[p];
+    const cores = [...(colonial ? [] : [owner]), ...(setup.extraCores?.[p] ?? [])].filter((t, i, arr) => arr.indexOf(t) === i);
     s.provinces.push({
       owner,
       controller: owner,
@@ -183,7 +184,8 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
       recruits: [],
       unrest: 0,
       siege: null,
-      changedDay: day - 365 * 50,
+      // Sömürgeler başlangıçtan itibaren çekirdek entegrasyon süresini bekler
+      changedDay: colonial ? day : day - 365 * 50,
     });
   }
   // Ülkeler
@@ -207,9 +209,11 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
 
   const ctx = makeCtx(world, s);
   // Servet ve ölçekler
+  // Kişi başı servet çekirdek bölgelerden hesaplanır (sömürge nüfusu ortalamayı düşürmez)
   const outBy = new Map<Tag, number>();
   const popBy = new Map<Tag, number>();
   s.provinces.forEach((ps) => {
+    if (!ps.cores.includes(ps.owner)) return;
     outBy.set(ps.owner, (outBy.get(ps.owner) ?? 0) + ps.output);
     popBy.set(ps.owner, (popBy.get(ps.owner) ?? 0) + ps.pop);
   });

@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import ClientShell from '@/components/ClientShell';
+import { asset } from '@/lib/base';
 
 export const metadata: Metadata = {
   title: 'Age of Conquerors',
   description: 'Tarayıcıda çalışan büyük strateji oyunu: ekonomi, diplomasi, ordu ve alternatif tarih.',
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: asset('/favicon.svg') },
 };
 
 export const viewport: Viewport = {

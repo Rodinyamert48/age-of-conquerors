@@ -29,6 +29,8 @@ export interface ScenarioSetup {
   owner: Tag[];
   /** bölge başına ek çekirdekler (sahip otomatik çekirdektir) */
   extraCores?: Record<number, Tag[]>;
+  /** sömürge bölgeleri: sahibi çekirdek sayılmaz (insan gücüne kısmi katkı, zamanla entegre olur) */
+  colonial?: boolean[];
   /** bölge başına nüfus ve yıllık üretim */
   pop: number[];
   output: number[];

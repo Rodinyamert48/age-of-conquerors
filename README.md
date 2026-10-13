@@ -26,6 +26,14 @@ npm test           # Vitest birim/entegrasyon testleri
 
 Gereksinim: Node.js 20.9+ (Next.js 16).
 
+### Statik yayın (GitHub Pages)
+
+```bash
+STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/age-of-conquerors npm run build   # çıktı: out/
+```
+
+`.github/workflows/pages.yml` her push'ta tür denetimi ve testleri çalıştırır, statik siteyi derler ve GitHub Pages'e yükler (depo ayarlarında *Settings → Pages → Source: GitHub Actions* seçili olmalıdır).
+
 ## Oyunun içeriği
 
 - **Harita:** Natural Earth verisinden üretilmiş 2.863 bölge, 4.167 deniz düğümü, boğaz/kanal denetimi, nehirler, göller ve başkentler. Yakınlaştırılabilir Canvas haritası; siyasi, ekonomik, diplomatik, askerî kontrol, istikrar, ikmal ve arazi katmanları. İşgal edilmiş bölgeler çizgili gösterilir; ordular, rotalar, muharebeler ve kuşatmalar haritada görünür.

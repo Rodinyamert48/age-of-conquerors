@@ -169,6 +169,10 @@ export const useGame = create<GameStore>()((set, get) => ({
     set({ lastSaved: Date.now() });
   },
   endGame: () => {
+    // Ana menüye dönerken son durum oturum kaydına yazılır ("devam et" için)
+    writeSession();
+    if (sessionTimer) clearTimeout(sessionTimer);
+    sessionTimer = null;
     send({ type: 'unload' });
     roCtx = null;
     set({ state: null, playing: false, upcoming: [] });
@@ -195,6 +199,7 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
         else if (fresh.some((n) => n.kind === 'battle')) playSound('battle');
         else if (fresh.length) playSound('notify');
       }
+      scheduleSessionSave();
       // Otomatik kayıt
       if (msg.reason === 'turn') {
         const key = autosaveKey(msg.state);
@@ -227,18 +232,41 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
   }
 }
 
-/** Sekme gizlenince oturum kaydı (yenileme sonrası ilerleme korunur) */
+/**
+ * Oturum kaydı: sayfa yenilendiğinde ya da sekme kapandığında ilerleme kaybolmaz.
+ * Duraklatılmışken her değişiklikten kısa süre sonra, oynarken en fazla 10 saniyede bir yazılır.
+ * (Sayfa kapanırken başlatılan IndexedDB yazımı tamamlanmayabileceğinden yalnızca ona güvenilmez.)
+ */
+const SESSION_PLAYING_MS = 10_000;
+const SESSION_IDLE_MS = 600;
+let sessionTimer: ReturnType<typeof setTimeout> | null = null;
+let sessionWrittenFor: GameState | null = null;
+let lastSessionWrite = 0;
+
+function writeSession(): void {
+  const st = useGame.getState().state;
+  if (!st || st === sessionWrittenFor) return;
+  sessionWrittenFor = st;
+  lastSessionWrite = Date.now();
+  writeSave(st, 'session', 'Son oturum').catch(() => {});
+}
+
+function scheduleSessionSave(): void {
+  const { playing } = useGame.getState();
+  if (sessionTimer) {
+    if (playing) return; // oynarken zamanlayıcı sürer
+    clearTimeout(sessionTimer);
+  }
+  const delay = playing ? Math.max(SESSION_IDLE_MS, SESSION_PLAYING_MS - (Date.now() - lastSessionWrite)) : SESSION_IDLE_MS;
+  sessionTimer = setTimeout(() => {
+    sessionTimer = null;
+    writeSession();
+  }, delay);
+}
+
 if (typeof document !== 'undefined') {
-  let lastSession = 0;
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'hidden') return;
-    const st = useGame.getState().state;
-    if (!st || Date.now() - lastSession < 3000) return;
-    lastSession = Date.now();
-    writeSave(st, 'session', 'Son oturum').catch(() => {});
+    if (document.visibilityState === 'hidden') writeSession();
   });
-  window.addEventListener('pagehide', () => {
-    const st = useGame.getState().state;
-    if (st) writeSave(st, 'session', 'Son oturum').catch(() => {});
-  });
+  window.addEventListener('pagehide', writeSession);
 }

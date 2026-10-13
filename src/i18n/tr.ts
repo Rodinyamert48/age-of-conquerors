@@ -435,6 +435,7 @@ export const tr: Record<string, string> = {
 
   // Ordu paneli
   'army.title': 'Ordu',
+  'army.actions': 'Ordu emirleri',
   'army.owner': 'Sahibi',
   'army.location': 'Konum',
   'army.strength': 'Asker sayısı',
@@ -851,6 +852,7 @@ export const tr: Record<string, string> = {
   'recruit.noManpower': 'Yetersiz insan gücü.',
   'recruit.bankrupt': 'İflas sırasında asker toplanamaz.',
   'move.noPath': 'Bu hedefe geçerli bir rota yok (tarafsız topraklar, kara/deniz sınırı ya da kapalı boğaz).',
+  'move.noTransport': 'Ordunuzu denizden taşıyacak yeterli donanmanız yok (nakliye kapasitesi: {capacity} asker; gemi başına 4.000). Orduyu bölün ya da donanma kurun.',
   'move.landToSea': 'Kara ordusu denizde duramaz; bir kıyı bölgesi seçin.',
   'move.navyInland': 'Donanma yalnızca kıyı bölgelerine ve denize gidebilir.',
   'army.mergeNeedsTwo': 'Birleştirmek için aynı yerde en az iki ordu seçin.',

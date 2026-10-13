@@ -372,6 +372,8 @@ export interface War {
   battleScore: number;
   /** Muharebe kayıpları (taraf başına) */
   losses: { attackers: number; defenders: number };
+  /** İlan haklı bir gerekçeye dayanıyor mu (eski kayıtlarda yok: haklı sayılır) */
+  justified?: boolean;
 }
 
 export type TreatyType =

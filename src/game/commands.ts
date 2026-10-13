@@ -5,7 +5,7 @@
 import type { ArmyUnits, BuildingId, CommandResult, DiploActionType, PeaceTerm, PolicyId, Tag, TimeStep, UnitType } from './types';
 import { POLICY_IDS } from './types';
 import { invalidateArmies, warsOf, type Ctx } from './ctx';
-import { findPath } from './movement';
+import { canEmbark, findPath, transportCapacity } from './movement';
 import { armySize, atWar, warSide, REBEL_TAG } from './query';
 import { buildingAvailability, cancelConstruction, canResearch, createArmy, mergeInto, startConstruction, startRecruit } from './construction';
 import { computeAllBudgets } from './economy';
@@ -74,7 +74,12 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
         return ok({ days: 0 });
       }
       const res = findPath(ctx, a, cmd.target);
-      if (!res) return fail('move.noPath');
+      if (!res) {
+        if (!a.isNavy && !canEmbark(ctx, a) && findPath(ctx, a, cmd.target, { ignoreTransport: true })) {
+          return fail('move.noTransport', { capacity: transportCapacity(ctx, a.owner) });
+        }
+        return fail('move.noPath');
+      }
       // İlerleme yalnızca aynı ilk adıma devam ediliyorsa korunur
       if (a.path[0] !== res.path[0]) a.progress = 0;
       a.path = res.path;

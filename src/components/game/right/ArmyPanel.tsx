@@ -124,7 +124,7 @@ export default function ArmyPanel() {
 
       {mine && (
         <>
-          <SectionTitle>{t('country.actions')}</SectionTitle>
+          <SectionTitle>{t('army.actions')}</SectionTitle>
           <div className="grid grid-cols-2 gap-1.5">
             <Button size="sm" variant={ui.moveMode ? 'primary' : 'secondary'} disabled={!!a.battle} onClick={() => ui.setMoveMode(!ui.moveMode)}>
               <Move size={13} /> {t('army.move')}

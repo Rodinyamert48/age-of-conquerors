@@ -30,6 +30,7 @@
     "d3-delaunay": "^6.0.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
+    "fake-indexeddb": "^6.2.5",
     "polygon-clipping": "^0.15.7",
     "tailwindcss": "^4",
     "topojson-client": "^3.1.0",

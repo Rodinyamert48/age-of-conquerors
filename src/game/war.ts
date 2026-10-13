@@ -9,6 +9,7 @@ import {
   invalidateArmies,
   invalidateDiplomacy,
   invalidateOwnership,
+  neighborCountries,
   provincesOf,
   warsOf,
   type Ctx,
@@ -153,6 +154,7 @@ export function declareWar(ctx: Ctx, attacker: Tag, defender: Tag, goal: WarGoal
     score: 0,
     battleScore: 0,
     losses: { attackers: 0, defenders: 0 },
+    justified: chk.justified,
   };
   s.wars[war.id] = war;
   invalidateDiplomacy(ctx);
@@ -211,16 +213,38 @@ export function callToArms(ctx: Ctx, war: War, caller: Tag, ally: Tag): boolean 
   }
   const enemies = side === 'attackers' ? war.defenders : war.attackers;
   if (enemies.some((e) => isFriendly(ctx, ally, e) || findTreaty(ctx, 'nap', ally, e))) return false;
-  const rel = relation(s, ally, caller);
-  const c = s.countries[ally];
-  const willing = rel + c.ai.aggression * 30 - c.warExhaustion - (warsOf(ctx, ally).length ? 25 : 0);
-  if (willing >= 10) {
+  if (callToArmsWillingness(ctx, war, caller, ally) >= 10) {
     joinWar(ctx, war, ally, side);
     return true;
   }
+  const c = s.countries[ally];
   addRelation(s, ally, caller, -15);
   notify(ctx, 'diplomacy', 'notif.callDeclined', { ally: c.name, country: s.countries[caller].name }, { severity: 'bad', involves: [caller] });
   return false;
+}
+
+/**
+ * Müttefikin savaşa katılma isteği (>= 10 ise katılır).
+ * İlişki, saldırganlık, savaş yorgunluğu, savaşın haklılığı, cepheye yakınlık
+ * ve düşmanla mevcut ilişki hesaba katılır.
+ */
+export function callToArmsWillingness(ctx: Ctx, war: War, caller: Tag, ally: Tag): number {
+  const s = ctx.s;
+  const c = s.countries[ally];
+  const side = warSide(war, caller);
+  const enemies = side === 'attackers' ? war.defenders : war.attackers;
+  let v = relation(s, ally, caller) * 0.6 + c.ai.aggression * 25 - c.warExhaustion;
+  if (warsOf(ctx, ally).length) v -= 25;
+  // Saldırı savaşları: haksız ilanlara katılmak itibar kaybettirir
+  if (side === 'attackers' && war.justified === false) v -= 40;
+  // Cepheye komşu olmayan müttefikin savaşta çıkarı azdır
+  const nb = neighborCountries(ctx, ally);
+  v += enemies.some((e) => nb.has(e)) ? 10 : -15;
+  // Düşmanla iyi ilişkisi olan ülke isteksizdir
+  let worst = 0;
+  for (const e of enemies) worst = Math.max(worst, relation(s, ally, e));
+  v -= worst * 0.3;
+  return v;
 }
 
 export function joinWar(ctx: Ctx, war: War, tag: Tag, side: 'attackers' | 'defenders'): void {

@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0a101b;
+  --color-bg-2: #0e1624;
+  --color-panel: #111a29;
+  --color-panel-2: #162135;
+  --color-panel-3: #1c2a42;
+  --color-line: #27344b;
+  --color-line-2: #34445f;
+  --color-ink: #ece6d6;
+  --color-ink-2: #cfc8b6;
+  --color-muted: #8e9aae;
+  --color-faint: #5d6a80;
+  --color-gold: #d2ae5c;
+  --color-gold-2: #a8863d;
+  --color-gold-soft: #e9d49a;
+  --color-danger: #d1584c;
+  --color-good: #6dbb76;
+  --color-info: #6fa6da;
+  --color-warn: #e0a94e;
+  --font-display: Georgia, "Times New Roman", "Liberation Serif", serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* İnce kaydırma çubukları */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-2) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-line-2);
+  border-radius: 4px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hafif geçişler (ayarlardan kapatılabilir) */
+html[data-animations="off"] *,
+html[data-animations="off"] *::before,
+html[data-animations="off"] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.anim-in {
+  animation: fade-in 160ms ease-out;
+}
+
+input[type="range"] {
+  accent-color: var(--color-gold);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 1px;
+}
+
+.flag {
+  display: inline-block;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.menu-backdrop {
+  background:
+    radial-gradient(ellipse at 70% 40%, rgba(40, 66, 102, 0.35), transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(120, 90, 40, 0.12), transparent 50%),
+    var(--color-bg);
+}

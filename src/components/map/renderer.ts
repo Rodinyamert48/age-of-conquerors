@@ -1,11 +1,18 @@
 /**
  * Canvas tabanlı harita çizicisi. React'ten bağımsızdır; MapCanvas bileşeni tarafından yönetilir.
- * Pahalı yollar (renk grupları, ülke sınırları, etiketler) yalnızca ilgili veri değiştiğinde yeniden kurulur.
+ *
+ * Performans düzeni:
+ *  - Taban katmanı (bölge renkleri, sınırlar, nehirler, ülke adları) alttaki ayrı bir tuvale çizilir ve
+ *    yalnızca renkler, sahiplik, seçili ülke ya da görünüm değişince yenilenir.
+ *  - Kaydırma/yakınlaştırma sırasında taban tuvali CSS dönüşümüyle (GPU) taşınır; hareket durunca
+ *    tam kalitede yeniden çizilir.
+ *  - Uzak bakışta sadeleştirilmiş geometri (ayrıntı seviyeleri) kullanılır.
+ *  - Fare vurgusu, ordular, rotalar, kuşatmalar ve muharebeler her karede ucuz bir üst katmanda çizilir.
  */
 import type { GameState, Tag } from '@/game/types';
 import type { Ctx } from '@/game/ctx';
 import type { World } from '@/game/world';
-import { countryBorders, outline, type MapGeometry } from './geometry';
+import { countryBorders, getLod, lodForScale, outline, type MapGeometry, type MapLod } from './geometry';
 import { rgbStr, type ProvinceColoring, type RGB } from './modes';
 import { armySize, atWar, isFriendly, REBEL_TAG } from '@/game/query';
 import { armyBaseSpeed, edgeDays } from '@/game/movement';
@@ -72,16 +79,29 @@ export class MapRenderer {
   private fillGroups: { color: string; path: Path2D }[] = [];
   private stripeGroups: { color: RGB; path: Path2D }[] = [];
   private coloringRef: ProvinceColoring | null = null;
+  private groupsKey = '';
+  private coloringId = 0;
+  private coloringIds = new WeakMap<ProvinceColoring, number>();
   private borderPath: Path2D | null = null;
   private borderKey = '';
+  /** Alttaki taban katmanı tuvali ve hangi görünüm/veri için çizildiği */
+  private base: HTMLCanvasElement;
+  private baseView: View | null = null;
+  private baseKey = '';
+  /** Son görünüm değişikliği (kaydırma/yakınlaştırma sürüyor mu) */
+  private lastViewChange = 0;
+  /** Etkileşim bitince tam kalite çizim gerekir */
+  needsSettle = false;
   private labels: CountryLabel[] = [];
   private labelKey = '';
   private selOutline: Path2D | null = null;
   private selKey = '';
   private patterns = new Map<string, CanvasPattern>();
 
-  constructor(canvas: HTMLCanvasElement, g: MapGeometry, world: World) {
+  constructor(canvas: HTMLCanvasElement, base: HTMLCanvasElement, g: MapGeometry, world: World) {
     this.canvas = canvas;
+    this.base = base;
+    base.style.transformOrigin = '0 0';
     this.g = g;
     this.world = world;
   }
@@ -92,6 +112,14 @@ export class MapRenderer {
     this.dpr = dpr;
     this.canvas.width = Math.max(1, Math.round(cssW * dpr));
     this.canvas.height = Math.max(1, Math.round(cssH * dpr));
+    this.base.width = this.canvas.width;
+    this.base.height = this.canvas.height;
+    this.baseView = null;
+  }
+
+  /** Kaydırma/yakınlaştırma bildirimi: taban katmanı hareket bitene kadar dönüştürülerek gösterilir */
+  viewChanged() {
+    this.lastViewChange = performance.now();
   }
 
   minScale() {
@@ -143,33 +171,41 @@ export class MapRenderer {
   }
 
   // -------------------------------------------------------------------------
-  private setColoring(c: ProvinceColoring) {
-    if (this.coloringRef === c) return;
+  private idOf(c: ProvinceColoring): number {
+    let id = this.coloringIds.get(c);
+    if (!id) this.coloringIds.set(c, (id = ++this.coloringId));
+    return id;
+  }
+
+  private setColoring(c: ProvinceColoring, lod: MapLod) {
+    const key = `${this.idOf(c)}|${lod.tol}`;
+    if (this.groupsKey === key) return;
+    this.groupsKey = key;
     this.coloringRef = c;
     const groups = new Map<string, Path2D>();
     c.fill.forEach((rgb, p) => {
-      const key = rgbStr(rgb);
-      let path = groups.get(key);
-      if (!path) groups.set(key, (path = new Path2D()));
-      path.addPath(this.g.provincePaths[p]);
+      const k = rgbStr(rgb);
+      let path = groups.get(k);
+      if (!path) groups.set(k, (path = new Path2D()));
+      path.addPath(lod.provincePaths[p]);
     });
     this.fillGroups = [...groups.entries()].map(([color, path]) => ({ color, path }));
     const sg = new Map<string, { color: RGB; path: Path2D }>();
     c.stripe.forEach((rgb, p) => {
       if (!rgb) return;
-      const key = rgbStr(rgb);
-      let e = sg.get(key);
-      if (!e) sg.set(key, (e = { color: rgb, path: new Path2D() }));
-      e.path.addPath(this.g.provincePaths[p]);
+      const k = rgbStr(rgb);
+      let e = sg.get(k);
+      if (!e) sg.set(k, (e = { color: rgb, path: new Path2D() }));
+      e.path.addPath(lod.provincePaths[p]);
     });
     this.stripeGroups = [...sg.values()];
   }
 
-  private ensureBorders(s: GameState) {
-    const key = `${s.versions.owners}`;
+  private ensureBorders(s: GameState, lod: MapLod) {
+    const key = `${s.versions.owners}|${lod.tol}`;
     if (this.borderKey === key && this.borderPath) return;
     this.borderKey = key;
-    this.borderPath = countryBorders(this.g, (p) => s.provinces[p].owner);
+    this.borderPath = countryBorders(this.g, (p) => s.provinces[p].owner, lod.arcs);
   }
 
   private ensureLabels(s: GameState, lang: Lang) {
@@ -267,21 +303,74 @@ export class MapRenderer {
     const s = rctx.s;
     const ctx = this.canvas.getContext('2d');
     if (!ctx) return;
-    this.setColoring(coloring);
-    this.ensureBorders(s);
-    this.ensureLabels(s, opts.lang);
-    const { dpr } = this;
     const v = this.view;
+    const { dpr } = this;
+    const baseKey = `${this.idOf(coloring)}|${s.versions.owners}|${sel.country}|${opts.quality}|${opts.lang}|${this.canvas.width}x${this.canvas.height}`;
+    const bv = this.baseView;
+    const sameView = !!bv && bv.x === v.x && bv.y === v.y && bv.scale === v.scale;
+    const interacting = performance.now() - this.lastViewChange < 160;
+    this.needsSettle = false;
+    if (!bv || this.baseKey !== baseKey || !sameView) {
+      if (interacting && bv && this.baseKey === baseKey) {
+        // Hareket sürerken: eski taban görüntüsünü GPU ile taşı/ölçekle
+        const f = v.scale / bv.scale;
+        this.base.style.transform = `translate(${(bv.x - v.x) * v.scale}px, ${(bv.y - v.y) * v.scale}px) scale(${f})`;
+        this.needsSettle = true;
+      } else {
+        this.renderBase(rctx, coloring, sel, opts);
+        this.base.style.transform = '';
+      }
+    }
+    // Üst katman her karede temizlenip yeniden çizilir (ucuz)
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    // Üst katman: vurgu ve seçim (harita koordinatında)
+    const lod = getLod(this.g, lodForScale(v.scale));
+    const k = v.scale * dpr;
+    ctx.setTransform(k, 0, 0, k, -v.x * k, -v.y * k);
+    const px = 1 / v.scale;
+    if (hover >= 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      ctx.fill(lod.provincePaths[hover], 'evenodd');
+    }
+    if (sel.province !== null) {
+      ctx.fillStyle = 'rgba(255,240,200,0.12)';
+      ctx.fill(lod.provincePaths[sel.province], 'evenodd');
+      ctx.strokeStyle = '#f4ecd8';
+      ctx.lineWidth = px * 1.8;
+      ctx.stroke(lod.provincePaths[sel.province]);
+    }
+    // Ekran uzayı katmanları
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.drawSieges(ctx, rctx);
+    if (opts.showSeaNodes) this.drawSeaNodes(ctx);
+    this.drawPaths(ctx, rctx, sel, opts);
+    this.markerHits = [];
+    this.drawArmies(ctx, rctx, sel, opts, time);
+    this.drawBattles(ctx, rctx, sel, opts, time);
+    MapRenderer.lastView = { ...this.view };
+  }
+
+  /** Taban katmanını mevcut görünüm için yeniden çiz (pahalı; seyrek çağrılır) */
+  private renderBase(rctx: Ctx, coloring: ProvinceColoring, sel: Selection, opts: RenderOptions) {
+    const s = rctx.s;
+    const base = this.base;
+    const ctx = base.getContext('2d');
+    if (!ctx) return;
+    const v = this.view;
+    const { dpr } = this;
+    const lod = getLod(this.g, lodForScale(v.scale));
+    this.setColoring(coloring, lod);
+    this.ensureBorders(s, lod);
+    this.ensureLabels(s, opts.lang);
     const k = v.scale * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = OCEAN_DEEP;
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.fillRect(0, 0, base.width, base.height);
     ctx.setTransform(k, 0, 0, k, -v.x * k, -v.y * k);
-    // Deniz alanı
     ctx.fillStyle = OCEAN;
     ctx.fillRect(0, 0, this.g.width, this.g.height);
     this.drawGraticule(ctx, v.scale);
-    // Bölge dolguları
     for (const fg of this.fillGroups) {
       ctx.fillStyle = fg.color;
       ctx.fill(fg.path, 'evenodd');
@@ -297,20 +386,9 @@ export class MapRenderer {
         ctx.fill(sg.path, 'evenodd');
       }
     }
-    // Göller
     ctx.fillStyle = OCEAN;
-    ctx.fill(this.g.lakes, 'evenodd');
-    // Fareyle üzerine gelinen bölge
-    if (hover >= 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.14)';
-      ctx.fill(this.g.provincePaths[hover], 'evenodd');
-    }
-    if (sel.province !== null) {
-      ctx.fillStyle = 'rgba(255,240,200,0.12)';
-      ctx.fill(this.g.provincePaths[sel.province], 'evenodd');
-    }
-    const px = 1 / v.scale; // 1 css pikseli harita biriminde
-    // Nehirler
+    ctx.fill(lod.lakes, 'evenodd');
+    const px = 1 / v.scale;
     if (opts.quality !== 'low') {
       ctx.strokeStyle = 'rgba(96,150,210,0.55)';
       ctx.lineCap = 'round';
@@ -320,28 +398,25 @@ export class MapRenderer {
         if (i === 1 && v.scale < 0.25) break;
         if (i === 2 && v.scale < 0.6) break;
         ctx.lineWidth = px * (i === 0 ? 1.2 : 0.8);
-        ctx.stroke(this.g.rivers[i]);
+        ctx.stroke(lod.rivers[i]);
       }
     }
-    // Bölge sınırları
     if (opts.quality !== 'low' && v.scale > 0.2) {
       const a = Math.min(0.35, (v.scale - 0.2) * 0.5);
       ctx.strokeStyle = `rgba(20,24,30,${a})`;
       ctx.lineWidth = px * 0.6;
-      ctx.stroke(this.g.provinceBorders);
+      ctx.stroke(lod.provinceBorders);
     }
-    // Kıyı ve ülke sınırları
     ctx.strokeStyle = 'rgba(10,14,20,0.75)';
     ctx.lineWidth = px * 0.9;
-    ctx.stroke(this.g.coast);
+    ctx.stroke(lod.coast);
     if (this.borderPath) {
       ctx.strokeStyle = 'rgba(12,14,18,0.9)';
       ctx.lineWidth = px * 1.3;
       ctx.stroke(this.borderPath);
     }
-    // Seçili ülke vurgusu
     if (sel.country) {
-      const key = `${sel.country}|${s.versions.owners}`;
+      const key = `${sel.country}|${s.versions.owners}|${lod.tol}`;
       if (key !== this.selKey) {
         this.selKey = key;
         const tag = sel.country;
@@ -349,7 +424,7 @@ export class MapRenderer {
         s.provinces.forEach((ps, i) => {
           if (ps.owner === tag) cands.push(i);
         });
-        this.selOutline = outline(this.g, (p) => s.provinces[p].owner === tag, cands);
+        this.selOutline = outline(this.g, (p) => s.provinces[p].owner === tag, cands, lod.arcs);
       }
       if (this.selOutline) {
         ctx.strokeStyle = 'rgba(0,0,0,0.6)';
@@ -360,21 +435,10 @@ export class MapRenderer {
         ctx.stroke(this.selOutline);
       }
     }
-    if (sel.province !== null) {
-      ctx.strokeStyle = '#f4ecd8';
-      ctx.lineWidth = px * 1.8;
-      ctx.stroke(this.g.provincePaths[sel.province]);
-    }
-    // Ekran uzayı katmanları
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.drawLabels(ctx, s, opts);
-    this.drawSieges(ctx, rctx);
-    if (opts.showSeaNodes) this.drawSeaNodes(ctx);
-    this.drawPaths(ctx, rctx, sel, opts);
-    this.markerHits = [];
-    this.drawArmies(ctx, rctx, sel, opts, time);
-    this.drawBattles(ctx, rctx, sel, opts, time);
-    MapRenderer.lastView = { ...this.view };
+    this.baseView = { ...v };
+    this.baseKey = `${this.idOf(coloring)}|${s.versions.owners}|${sel.country}|${opts.quality}|${opts.lang}|${this.canvas.width}x${this.canvas.height}`;
   }
 
   private drawGraticule(ctx: CanvasRenderingContext2D, scale: number) {

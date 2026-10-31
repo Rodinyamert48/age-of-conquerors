@@ -26,7 +26,6 @@ interface UIStore {
   moveMode: boolean;
   mapMode: MapMode;
   focus: FocusRequest | null;
-  hover: MapHover | null;
   peace: { warId: string; target: Tag } | null;
   pauseMenu: boolean;
   logOpen: boolean;
@@ -38,7 +37,6 @@ interface UIStore {
   setMoveMode: (v: boolean) => void;
   setMapMode: (m: MapMode) => void;
   focusOn: (x: number, y: number, scale?: number) => void;
-  setHover: (h: MapHover | null) => void;
   openPeace: (warId: string, target: Tag) => void;
   closePeace: () => void;
   setPauseMenu: (v: boolean) => void;
@@ -56,7 +54,6 @@ export const useUI = create<UIStore>()((set, get) => ({
   moveMode: false,
   mapMode: 'political',
   focus: null,
-  hover: null,
   peace: null,
   pauseMenu: false,
   logOpen: false,
@@ -72,13 +69,13 @@ export const useUI = create<UIStore>()((set, get) => ({
   setMoveMode: (v) => set({ moveMode: v }),
   setMapMode: (m) => set({ mapMode: m }),
   focusOn: (x, y, scale) => set({ focus: { x, y, scale, nonce: nonce++ } }),
-  setHover: (h) => set({ hover: h }),
   openPeace: (warId, target) => set({ peace: { warId, target } }),
   closePeace: () => set({ peace: null }),
   setPauseMenu: (v) => set({ pauseMenu: v }),
   setLogOpen: (v) => set({ logOpen: v }),
   clearSelection: () => set({ selectedArmies: [], right: null, moveMode: false }),
-  reset: () =>
+  reset: () => {
+    useHover.getState().setHover(null);
     set({
       leftTab: null,
       right: null,
@@ -86,8 +83,17 @@ export const useUI = create<UIStore>()((set, get) => ({
       moveMode: false,
       mapMode: useSettings.getState().defaultMapMode,
       focus: null,
-      hover: null,
       peace: null,
       pauseMenu: false,
-    }),
+    });
+  },
+}));
+
+/**
+ * İmleç altındaki harita öğesi. Ayrı bir depoda tutulur: fare her hareket ettiğinde yalnızca
+ * buna abone olan küçük bileşenler (ipucu, rota önizlemesi) yeniden çizilir.
+ */
+export const useHover = create<{ hover: MapHover | null; setHover: (h: MapHover | null) => void }>()((set) => ({
+  hover: null,
+  setHover: (h) => set({ hover: h }),
 }));

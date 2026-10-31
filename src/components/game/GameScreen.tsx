@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useGame } from '@/store/game';
-import { useUI, type LeftTab } from '@/store/ui';
+import { useHover, useUI, type LeftTab } from '@/store/ui';
 import { useSettings, type KeyAction } from '@/store/settings';
 import { useT } from '@/i18n';
 import MapCanvas, { type MapClick, type MapHover } from '@/components/map/MapCanvas';
@@ -107,14 +107,16 @@ export default function GameScreen() {
   );
 
   const onHover = useCallback((h: MapHover | null) => {
-    const cur = useUI.getState().hover;
+    const cur = useHover.getState().hover;
     if (!h && !cur) return;
-    useUI.getState().setHover(h);
+    useHover.getState().setHover(h);
   }, []);
 
   // Rota önizlemesi (seçili ordu varken imleç altındaki hedefe)
-  const hoverNode = ui.hover ? (ui.hover.province >= 0 ? ui.hover.province : ui.hover.seaNode) : -1;
   const previewArmy = ui.selectedArmies[0] ?? null;
+  // Yalnızca hareket modunda imleç altındaki düğüme abone ol (fare hareketi tüm ekranı yeniden çizdirmesin)
+  const watchHover = ui.moveMode && !!previewArmy;
+  const hoverNode = useHover((s) => (watchHover && s.hover ? (s.hover.province >= 0 ? s.hover.province : s.hover.seaNode) : -1));
   const previewPath = useMemo(() => {
     if (!ctx || !previewArmy || hoverNode < 0) return null;
     const a = ctx.s.armies[previewArmy];

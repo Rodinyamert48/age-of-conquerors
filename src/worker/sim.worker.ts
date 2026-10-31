@@ -9,6 +9,7 @@ import { makeCtx, type Ctx } from '@/game/ctx';
 import { runCommand } from '@/game/commands';
 import { computeAllBudgets } from '@/game/economy';
 import { SPEED_DELAYS, type FromWorker, type ToWorker } from './protocol';
+import { writeSave } from '@/lib/saves';
 
 declare const self: DedicatedWorkerGlobalScope;
 
@@ -20,6 +21,7 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let processing = false;
 let lastPost = 0;
 let lastTurnMs = 0;
+const POST_INTERVAL_MS = 240;
 
 function post(msg: FromWorker) {
   self.postMessage(msg);
@@ -59,8 +61,8 @@ function tick() {
   processing = false;
   if (ctx.s.gameOver && !ctx.s.gameOver.acknowledged) playing = false;
   const now = performance.now();
-  // En yüksek hızda arayüze saniyede ~15 güncelleme gönder
-  if (!playing || speed < 5 || now - lastPost > 66) postState('turn');
+  // Tam durumun kopyalanması pahalıdır (~1,5 MB): oynarken arayüze saniyede en çok ~4 güncelleme gönderilir
+  if (!playing || now - lastPost >= POST_INTERVAL_MS) postState('turn');
   if (playing) schedule(SPEED_DELAYS[speed] - (performance.now() - t0));
 }
 
@@ -122,6 +124,17 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
         processing = false;
         postState('turn');
         break;
+      case 'save': {
+        const { id, kind, name } = msg;
+        if (!ctx) {
+          post({ type: 'saved', id, error: 'Etkin oyun yok' });
+          break;
+        }
+        writeSave(ctx.s, kind, name)
+          .then(() => post({ type: 'saved', id }))
+          .catch((err: unknown) => post({ type: 'saved', id, error: err instanceof Error ? err.message : String(err) }));
+        break;
+      }
       case 'unload':
         playing = false;
         stopLoop();

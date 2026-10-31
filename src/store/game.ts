@@ -12,7 +12,7 @@ import { makeCtx, type Ctx } from '@/game/ctx';
 import type { Command } from '@/game/commands';
 import type { NewGameOptions } from '@/game/engine';
 import type { FromWorker, ToWorker, Upcoming } from '@/worker/protocol';
-import { writeSave, type SaveKind } from '@/lib/saves';
+import type { SaveKind } from '@/lib/saves';
 import { useSettings } from './settings';
 import { dateFromDay } from '@/game/calendar';
 import { playSound } from '@/lib/audio';
@@ -54,6 +54,19 @@ const pendingCommands = new Map<number, (r: CommandResult) => void>();
 let nextCmdId = 1;
 let roCtx: { state: GameState; ctx: Ctx } | null = null;
 let lastAutosaveKey = '';
+
+const pendingSaves = new Map<number, { resolve: () => void; reject: (e: Error) => void }>();
+let nextSaveId = 1;
+
+/** Kaydı simülasyon iş parçacığı yazar (durumun sahibi odur; ana iş parçacığı takılmaz) */
+function saveInWorker(kind: SaveKind, name?: string): Promise<void> {
+  if (!worker) return Promise.reject(new Error('Simülasyon başlatılmadı'));
+  const id = nextSaveId++;
+  return new Promise((resolve, reject) => {
+    pendingSaves.set(id, { resolve, reject });
+    send({ type: 'save', id, kind, name });
+  });
+}
 
 function send(msg: ToWorker) {
   worker?.postMessage(msg);
@@ -164,9 +177,8 @@ export const useGame = create<GameStore>()((set, get) => ({
     if (!get().playing) send({ type: 'step' });
   },
   save: async (kind, name) => {
-    const st = get().state;
-    if (!st) return;
-    await writeSave(st, kind, name);
+    if (!get().state) return;
+    await saveInWorker(kind, name);
     set({ lastSaved: Date.now() });
   },
   endGame: () => {
@@ -206,12 +218,21 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
         const key = autosaveKey(msg.state);
         if (key && key !== lastAutosaveKey) {
           if (lastAutosaveKey) {
-            writeSave(msg.state, 'auto', undefined)
+            saveInWorker('auto')
               .then(() => useGame.setState({ lastSaved: Date.now() }))
               .catch((err: unknown) => useGame.setState({ error: `Otomatik kayıt başarısız: ${err instanceof Error ? err.message : String(err)}` }));
           }
           lastAutosaveKey = key;
         }
+      }
+      break;
+    }
+    case 'saved': {
+      const p = pendingSaves.get(msg.id);
+      pendingSaves.delete(msg.id);
+      if (p) {
+        if (msg.error) p.reject(new Error(msg.error));
+        else p.resolve();
       }
       break;
     }
@@ -249,7 +270,7 @@ function writeSession(): void {
   if (!st || st === sessionWrittenFor) return;
   sessionWrittenFor = st;
   lastSessionWrite = Date.now();
-  writeSave(st, 'session', 'Son oturum').catch(() => {});
+  saveInWorker('session', 'Son oturum').catch(() => {});
 }
 
 function scheduleSessionSave(): void {

@@ -1,6 +1,7 @@
 import type { CommandResult, GameState, WorldData } from '@/game/types';
 import type { NewGameOptions } from '@/game/engine';
 import type { Command } from '@/game/commands';
+import type { SaveKind } from '@/lib/saves';
 
 export interface Upcoming {
   kind: string;
@@ -18,12 +19,15 @@ export type ToWorker =
   | { type: 'pause' }
   | { type: 'speed'; speed: number }
   | { type: 'step' }
+  /** Kayıt iş parçacığında yazılır: ana iş parçacığı büyük durumu kopyalamak zorunda kalmaz */
+  | { type: 'save'; id: number; kind: SaveKind; name?: string }
   | { type: 'unload' };
 
 export type FromWorker =
   | { type: 'ready' }
   | { type: 'state'; state: GameState; upcoming: Upcoming[]; playing: boolean; reason: 'new' | 'load' | 'turn' | 'command'; turnMs: number }
   | { type: 'commandResult'; id: number; result: CommandResult }
+  | { type: 'saved'; id: number; error?: string }
   | { type: 'error'; message: string; fatal?: boolean };
 
 /** Hız → turlar arası hedef gecikme (ms) */

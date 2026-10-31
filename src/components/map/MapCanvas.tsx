@@ -61,6 +61,7 @@ function geometryFor(geo: GeoData): MapGeometry {
 export default function MapCanvas(props: Props) {
   const { world, geo, state, mode, viewer, selection, focus } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const baseRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<MapRenderer | null>(null);
   const frame = useRef<number>(0);
@@ -72,8 +73,9 @@ export default function MapCanvas(props: Props) {
   const geometry = useMemo(() => geometryFor(geo), [geo]);
   const rctx = useMemo(() => props.ctx ?? makeCtx(world, state), [props.ctx, world, state]);
 
-  // Renklendirme: siyasi katman yalnızca sahiplik değişince yeniden hesaplanır
-  const coloringKey = mode === 'political' || mode === 'terrain' ? `${mode}|${state.versions.owners}|${viewer}` : `${mode}|${viewer}|${state.turn}|${state.versions.owners}`;
+  // Renklendirme: siyasi katman yalnızca sahiplik değişince, diğer katmanlar en çok ayda bir yeniden hesaplanır
+  const month = Math.floor(state.day / 30.44);
+  const coloringKey = mode === 'political' || mode === 'terrain' ? `${mode}|${state.versions.owners}|${viewer}` : `${mode}|${viewer}|${month}|${state.versions.owners}`;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const coloring = useMemo<ProvinceColoring>(() => computeColoring(rctx, mode, viewer), [coloringKey]);
 
@@ -83,9 +85,15 @@ export default function MapCanvas(props: Props) {
     latest.current = { rctx, selection, props, quality, animations, lang, coloring };
   });
 
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestDraw = () => {
     if (frame.current) return;
     frame.current = requestAnimationFrame(drawNow);
+  };
+  /** Kaydırma/yakınlaştırma: hızlı önizleme, hareket durunca tam kalite */
+  const viewDraw = () => {
+    rendererRef.current?.viewChanged();
+    requestDraw();
   };
 
   function drawNow(time: number) {
@@ -102,6 +110,12 @@ export default function MapCanvas(props: Props) {
       previewArmy: l.props.previewArmy ?? null,
       fog: l.rctx.s.rules.fogOfWar,
     }, time);
+    if (r.needsSettle && !settleTimer.current) {
+      settleTimer.current = setTimeout(() => {
+        settleTimer.current = null;
+        requestDraw();
+      }, 180);
+    }
     // Muharebe animasyonu
     if (l.animations && Object.keys(l.rctx.s.battles).length) {
       setTimeout(() => requestDraw(), 50);
@@ -112,7 +126,7 @@ export default function MapCanvas(props: Props) {
   useEffect(() => {
     const canvas = canvasRef.current!;
     const wrap = wrapRef.current!;
-    const r = new MapRenderer(canvas, geometry, world);
+    const r = new MapRenderer(canvas, baseRef.current!, geometry, world);
     rendererRef.current = r;
     const resize = () => {
       const rect = wrap.getBoundingClientRect();
@@ -130,6 +144,8 @@ export default function MapCanvas(props: Props) {
     return () => {
       ro.disconnect();
       if (frame.current) cancelAnimationFrame(frame.current);
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+      settleTimer.current = null;
       frame.current = 0;
       rendererRef.current = null;
     };
@@ -219,7 +235,7 @@ export default function MapCanvas(props: Props) {
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (pinchDist > 0) {
           r.zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, d / pinchDist);
-          requestDraw();
+          viewDraw();
         }
         pinchDist = d;
         return;
@@ -232,7 +248,7 @@ export default function MapCanvas(props: Props) {
           r.view.x = down.vx - dx / r.view.scale;
           r.view.y = down.vy - dy / r.view.scale;
           r.clampView();
-          requestDraw();
+          viewDraw();
           return;
         }
       }
@@ -269,14 +285,14 @@ export default function MapCanvas(props: Props) {
       const [x, y] = local(e);
       const factor = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016));
       r.zoomAt(x, y, factor);
-      requestDraw();
+      viewDraw();
     };
     const onDbl = (e: MouseEvent) => {
       const r = rendererRef.current;
       if (!r) return;
       const [x, y] = local(e);
       r.zoomAt(x, y, 1.8);
-      requestDraw();
+      viewDraw();
     };
     const onKey = (e: KeyboardEvent) => {
       const r = rendererRef.current;
@@ -292,7 +308,7 @@ export default function MapCanvas(props: Props) {
       else if (e.key === 'PageDown') r.zoomAt(r.cssW / 2, r.cssH / 2, 0.8);
       else return;
       r.clampView();
-      requestDraw();
+      viewDraw();
     };
     const prevent = (e: Event) => e.preventDefault();
     canvas.addEventListener('pointerdown', onDown);
@@ -319,10 +335,11 @@ export default function MapCanvas(props: Props) {
   }, [geometry, world]);
 
   return (
-    <div ref={wrapRef} className={`relative h-full w-full overflow-hidden ${props.className ?? ''}`}>
-      <canvas ref={canvasRef} className="block h-full w-full touch-none select-none" style={{ cursor: 'crosshair' }} aria-label="Dünya haritası" role="img" />
+    <div ref={wrapRef} className={`relative h-full w-full overflow-hidden ${props.className ?? ''}`} style={{ background: '#0e1c2e' }}>
+      <canvas ref={baseRef} className="pointer-events-none absolute inset-0 block h-full w-full" aria-hidden="true" />
+      <canvas ref={canvasRef} className="relative block h-full w-full touch-none select-none" style={{ cursor: 'crosshair' }} aria-label="Dünya haritası" role="img" />
       <div className="pointer-events-none absolute bottom-2 right-3 flex gap-1">
-        <ZoomButtons rendererRef={rendererRef} requestDraw={requestDraw} />
+        <ZoomButtons rendererRef={rendererRef} requestDraw={viewDraw} />
       </div>
     </div>
   );

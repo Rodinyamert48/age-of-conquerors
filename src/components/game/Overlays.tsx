@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronUp, Download, FolderOpen, Home, Play, Save, Settings as SettingsIcon, Trophy, Skull } from 'lucide-react';
 import { useGame } from '@/store/game';
-import { useUI } from '@/store/ui';
+import { useHover, useUI } from '@/store/ui';
 import { useSettings } from '@/store/settings';
 import { useT, useLang } from '@/i18n';
 import { Button, Flag, Modal, Segmented, Toggle, useConfirm, useToasts } from '@/components/ui';
@@ -318,7 +318,7 @@ export function MapModeBar() {
 export function HoverTooltip() {
   const t = useT();
   const lang = useLang();
-  const hover = useUI((s) => s.hover);
+  const hover = useHover((s) => s.hover);
   const selected = useUI((s) => s.selectedArmies);
   const state = useGame((s) => s.state);
   const ctx = useReadCtx();

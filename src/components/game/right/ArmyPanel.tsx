@@ -4,7 +4,7 @@ import { Anchor, Move, Pencil, Scissors, Shield, Square, Trash2, Combine } from 
 import { useGame } from '@/store/game';
 import { useUI } from '@/store/ui';
 import { useT, useLang } from '@/i18n';
-import { Bar, Button, Flag, SectionTitle, Stat, useConfirm } from '@/components/ui';
+import { Bar, Button, Collapsible, Flag, SectionTitle, Stat, useConfirm } from '@/components/ui';
 import { useCommand, useReadCtx, useCountryName } from '../hooks';
 import { armySize } from '@/game/query';
 import { armyBaseSpeed, pathDays } from '@/game/movement';
@@ -86,39 +86,45 @@ export default function ArmyPanel() {
         <p className="mt-3 text-xs text-muted">{t('army.hidden')}</p>
       ) : (
         <>
-          <SectionTitle>{t('army.composition')}</SectionTitle>
-          {UNIT_ORDER.filter((u) => a.units[u] > 0).map((u) => (
-            <Stat key={u} label={t(`unit.${u}`)} value={formatInt(a.units[u], lang)} />
-          ))}
-          <Stat label={a.isNavy ? t('army.ships') : t('army.strength')} value={formatInt(armySize(a), lang)} />
-          <div className="mt-2 space-y-1.5 text-xs">
+          <div className="mt-3 flex items-end justify-between gap-2">
             <div>
+              <div className="text-[11px] uppercase tracking-wide text-muted">{a.isNavy ? t('army.ships') : t('army.strength')}</div>
+              <div className="font-display text-2xl leading-tight text-ink tabular">{formatInt(armySize(a), lang)}</div>
+            </div>
+            <div className="w-1/2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted">{t('army.morale')}</span>
                 <span className="tabular">{formatPercent(a.morale, lang)}</span>
               </div>
               <Bar value={a.morale} max={1.2} color={a.morale > 0.6 ? 'bg-good' : a.morale > 0.3 ? 'bg-warn' : 'bg-danger'} />
             </div>
-            <div>
-              <div className="flex justify-between">
-                <span className="text-muted">{t('army.experience')}</span>
-                <span className="tabular">{formatPercent(a.experience, lang)}</span>
-              </div>
-              <Bar value={a.experience} color="bg-info" />
-            </div>
-            {!a.isNavy && (
+          </div>
+          {!a.isNavy && a.supply < 0.9 && <div className="mt-1 text-xs text-warn">{t('army.attritionWarning')}</div>}
+          <Collapsible title={t('army.composition')}>
+            {UNIT_ORDER.filter((u) => a.units[u] > 0).map((u) => (
+              <Stat key={u} label={t(`unit.${u}`)} value={formatInt(a.units[u], lang)} />
+            ))}
+            <div className="mt-2 space-y-1.5 text-xs">
               <div>
                 <div className="flex justify-between">
-                  <span className="text-muted">{t('army.supply')}</span>
-                  <span className="tabular">{formatPercent(a.supply, lang)}</span>
+                  <span className="text-muted">{t('army.experience')}</span>
+                  <span className="tabular">{formatPercent(a.experience, lang)}</span>
                 </div>
-                <Bar value={a.supply} color={a.supply > 0.9 ? 'bg-good' : 'bg-warn'} />
-                {a.supply < 0.9 && <div className="mt-0.5 text-warn">{t('army.attritionWarning')}</div>}
+                <Bar value={a.experience} color="bg-info" />
               </div>
-            )}
-          </div>
-          <Stat label={t('army.speed')} value={t('army.speedValue', { n: Math.round(armyBaseSpeed(ctx, a)) })} />
-          {mine && <Stat label={t('army.upkeep')} value={formatMoney(upkeep, lang)} />}
+              {!a.isNavy && (
+                <div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">{t('army.supply')}</span>
+                    <span className="tabular">{formatPercent(a.supply, lang)}</span>
+                  </div>
+                  <Bar value={a.supply} color={a.supply > 0.9 ? 'bg-good' : 'bg-warn'} />
+                </div>
+              )}
+            </div>
+            <Stat label={t('army.speed')} value={t('army.speedValue', { n: Math.round(armyBaseSpeed(ctx, a)) })} />
+            {mine && <Stat label={t('army.upkeep')} value={formatMoney(upkeep, lang)} />}
+          </Collapsible>
         </>
       )}
 

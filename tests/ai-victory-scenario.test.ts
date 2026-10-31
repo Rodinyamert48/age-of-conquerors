@@ -51,6 +51,21 @@ describe('yapay zekâ', () => {
   });
 });
 
+describe('otomatik araştırma', () => {
+  it('oyuncu için varsayılan olarak açıktır ve kapatılabilir', () => {
+    const ctx = newModernGame();
+    const tur = ctx.s.countries.TUR;
+    expect(tur.research.current).toBeTruthy();
+    expect(runCommand(ctx, { type: 'setAutoResearch', value: false }).ok).toBe(true);
+    tur.research.current = null;
+    for (let i = 0; i < 5; i++) advanceTurn(ctx);
+    expect(tur.research.current).toBeNull();
+    runCommand(ctx, { type: 'setAutoResearch', value: true });
+    advanceTurn(ctx);
+    expect(tur.research.current).toBeTruthy();
+  });
+});
+
 describe('zafer ve yenilgi', () => {
   it('oyuncu tüm topraklarını kaybederse yenilgi algılanır ve komutlar kilitlenir', () => {
     const ctx = newModernGame();

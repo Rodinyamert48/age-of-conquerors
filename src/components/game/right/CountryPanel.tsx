@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight, MapPin, Swords } from 'lucide-react';
 import { useGame } from '@/store/game';
 import { useUI } from '@/store/ui';
 import { useT, useLang } from '@/i18n';
-import { Bar, Button, Flag, SectionTitle, Stat, useConfirm, useToasts } from '@/components/ui';
+import { Bar, Button, Collapsible, Flag, SectionTitle, Stat, useConfirm, useToasts } from '@/components/ui';
 import { useCommand, useReadCtx, useCountryName } from '../hooks';
 import { countrySummary } from '@/game/selectors';
 import { evaluateProposal, improveCost } from '@/game/diplomacy';
@@ -16,7 +16,9 @@ import { formatCompact, formatDate, formatInt, formatMoney } from '@/lib/format'
 import { BAL } from '@/game/balance';
 import { warTitle } from '../text';
 
-const BILATERAL: DiploActionType[] = ['nap', 'alliance', 'defensive', 'trade', 'access', 'normalize', 'vassalize'];
+/** Sık kullanılan iki taraflı eylemler görünür; diğerleri "Diğer eylemler" altında */
+const PRIMARY: DiploActionType[] = ['alliance', 'nap', 'trade', 'access'];
+const SECONDARY: DiploActionType[] = ['defensive', 'normalize', 'vassalize'];
 
 export default function CountryPanel({ tag }: { tag: Tag }) {
   const t = useT();
@@ -85,6 +87,47 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
     }
   };
 
+  const bilateralRow = (a: DiploActionType) => {
+    const ev = evaluateProposal(ctx, me, tag, a);
+    const exists =
+      (a === 'nap' && findTreaty(ctx, 'nap', me, tag)) ||
+      (a === 'defensive' && findTreaty(ctx, 'defensive', me, tag)) ||
+      (a === 'trade' && findTreaty(ctx, 'trade', me, tag)) ||
+      (a === 'access' && findTreaty(ctx, 'access', tag, me)) ||
+      (a === 'alliance' && allianceOf(ctx, me)?.members.includes(tag)) ||
+      (a === 'vassalize' && findTreaty(ctx, 'vassal', me, tag));
+    if (exists) return null;
+    return (
+      <div key={a} className="rounded border border-line bg-panel-2">
+        <div className="flex items-center gap-1 px-2 py-1.5">
+          <button type="button" onClick={() => setOpen(open === a ? null : a)} className="flex min-w-0 flex-1 items-center gap-1 text-left">
+            {open === a ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            <span className="truncate text-ink">{t(`action.${a}`)}</span>
+          </button>
+          <span className={`text-[11px] tabular ${ev.accept ? 'text-good' : 'text-danger'}`}>{ev.accept ? '✓' : '✗'}</span>
+          <Button size="sm" onClick={() => runBilateral(a)}>
+            {t('common.apply')}
+          </Button>
+        </div>
+        {open === a && (
+          <div className="border-t border-line px-2 py-1.5 text-[11px]">
+            <p className="mb-1 text-muted">{t(`action.${a}.desc`, { years: BAL.napYears })}</p>
+            <div className="text-ink-2">{ev.accept ? t('diplo.likely', { score: Math.round(ev.score) }) : t('diplo.unlikely', { score: Math.round(ev.score) })}</div>
+            {ev.reasons.map((r) => (
+              <div key={r.key} className="flex justify-between">
+                <span className="text-muted">{t(r.key)}</span>
+                <span className={r.value >= 0 ? 'text-good' : 'text-danger'}>
+                  {r.value > 0 ? '+' : ''}
+                  {r.value <= -1000 ? '✗' : r.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="text-sm">
       <div className="flex items-center gap-3">
@@ -109,7 +152,7 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
         </Button>
       )}
 
-      <SectionTitle>{t('country.overview')}</SectionTitle>
+      <Collapsible title={t('country.overview')}>
       <Stat label={t('country.capital')} value={sum.capitalName} />
       <Stat label={t('country.population')} value={formatCompact(sum.pop, lang)} />
       <Stat label={t('country.provinces')} value={sum.provinces} />
@@ -121,6 +164,7 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
       {sum.alliance && <Stat label={t('country.alliance')} value={sum.alliance} />}
       {sum.overlord && <Stat label={t('country.overlord')} value={name(sum.overlord)} />}
       {sum.vassals.length > 0 && <Stat label={t('country.vassals')} value={sum.vassals.map(name).join(', ')} />}
+      </Collapsible>
       {wars.length > 0 && (
         <div className="mt-1">
           {wars.map((w) => (
@@ -157,49 +201,8 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
                 onClick={() => cmd({ type: 'diplomacy', action: 'improve', target: tag }, t('diplo.done'))}
               />
             )}
-            {!war && <ActionRow label={t('action.worsen')} desc={t('action.worsen.desc')} onClick={() => cmd({ type: 'diplomacy', action: 'worsen', target: tag }, t('diplo.done'))} />}
             {/* İki taraflı */}
-            {!war &&
-              BILATERAL.filter((a) => a !== 'normalize' || rel < -30).map((a) => {
-                const ev = evaluateProposal(ctx, me, tag, a);
-                const exists =
-                  (a === 'nap' && findTreaty(ctx, 'nap', me, tag)) ||
-                  (a === 'defensive' && findTreaty(ctx, 'defensive', me, tag)) ||
-                  (a === 'trade' && findTreaty(ctx, 'trade', me, tag)) ||
-                  (a === 'access' && findTreaty(ctx, 'access', tag, me)) ||
-                  (a === 'alliance' && allianceOf(ctx, me)?.members.includes(tag)) ||
-                  (a === 'vassalize' && findTreaty(ctx, 'vassal', me, tag));
-                if (exists) return null;
-                return (
-                  <div key={a} className="rounded border border-line bg-panel-2">
-                    <div className="flex items-center gap-1 px-2 py-1.5">
-                      <button type="button" onClick={() => setOpen(open === a ? null : a)} className="flex min-w-0 flex-1 items-center gap-1 text-left">
-                        {open === a ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                        <span className="truncate text-ink">{t(`action.${a}`)}</span>
-                      </button>
-                      <span className={`text-[11px] tabular ${ev.accept ? 'text-good' : 'text-danger'}`}>{ev.accept ? '✓' : '✗'} {Math.round(ev.score)}</span>
-                      <Button size="sm" onClick={() => runBilateral(a)}>
-                        {t('common.apply')}
-                      </Button>
-                    </div>
-                    {open === a && (
-                      <div className="border-t border-line px-2 py-1.5 text-[11px]">
-                        <p className="mb-1 text-muted">{t(`action.${a}.desc`, { years: BAL.napYears })}</p>
-                        <div className="text-ink-2">{ev.accept ? t('diplo.likely', { score: Math.round(ev.score) }) : t('diplo.unlikely', { score: Math.round(ev.score) })}</div>
-                        {ev.reasons.map((r) => (
-                          <div key={r.key} className="flex justify-between">
-                            <span className="text-muted">{t(r.key)}</span>
-                            <span className={r.value >= 0 ? 'text-good' : 'text-danger'}>
-                              {r.value > 0 ? '+' : ''}
-                              {r.value <= -1000 ? '✗' : r.value}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            {!war && PRIMARY.map(bilateralRow)}
             {c.recognizedBy && !c.recognizedBy.includes(me) && wars.some((w) => w.goal.type === 'independence' && w.attackers.includes(tag)) && (
               <ActionRow label={t('action.recognize')} desc={t('action.recognize.desc')} onClick={() => cmd({ type: 'diplomacy', action: 'recognize', target: tag }, t('diplo.done'))} />
             )}
@@ -219,6 +222,14 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
                   if (ok) cmd({ type: 'diplomacy', action: 'breakTreaty', target: tag }, t('diplo.done'));
                 }}
               />
+            )}
+            {!war && (
+              <Collapsible title={t('simple.otherActions')}>
+                <div className="flex flex-col gap-1">
+                  {SECONDARY.filter((a) => a !== 'normalize' || rel < -30).map(bilateralRow)}
+                  <ActionRow label={t('action.worsen')} desc={t('action.worsen.desc')} onClick={() => cmd({ type: 'diplomacy', action: 'worsen', target: tag }, t('diplo.done'))} />
+                </div>
+              </Collapsible>
             )}
             {!war && tag !== REBEL_TAG && (
               <Button variant="danger" className="mt-1" onClick={declare}>

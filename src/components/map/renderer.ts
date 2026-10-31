@@ -9,7 +9,7 @@
  *  - Uzak bakışta sadeleştirilmiş geometri (ayrıntı seviyeleri) kullanılır.
  *  - Fare vurgusu, ordular, rotalar, kuşatmalar ve muharebeler her karede ucuz bir üst katmanda çizilir.
  */
-import type { GameState, Tag } from '@/game/types';
+import type { GameState, Tag, Terrain } from '@/game/types';
 import type { Ctx } from '@/game/ctx';
 import type { World } from '@/game/world';
 import { countryBorders, getLod, lodForScale, outline, type MapGeometry, type MapLod } from './geometry';
@@ -41,6 +41,8 @@ export interface RenderOptions {
   previewPath: number[] | null;
   previewArmy: string | null;
   fog: boolean;
+  /** arazi kabartma tonları (siyasi/diplomatik katmanlarda) */
+  relief: boolean;
 }
 
 export interface MarkerHit {
@@ -61,8 +63,41 @@ interface CountryLabel {
   angle: number;
 }
 
-const OCEAN = '#13253b';
 const OCEAN_DEEP = '#0e1c2e';
+
+/** Araziye göre hafif kabartma tonu (ülke renginin üzerine) */
+const RELIEF: Partial<Record<Terrain, string>> = {
+  mountains: 'rgba(0,0,0,0.17)',
+  hills: 'rgba(0,0,0,0.085)',
+  forest: 'rgba(0,28,8,0.07)',
+  jungle: 'rgba(0,40,12,0.09)',
+  marsh: 'rgba(10,50,55,0.08)',
+  desert: 'rgba(255,236,190,0.11)',
+  tundra: 'rgba(235,242,255,0.12)',
+};
+
+/** Hafif kâğıt dokusu (bir kez üretilir) */
+let grainCanvas: HTMLCanvasElement | null = null;
+function grain(): HTMLCanvasElement {
+  if (grainCanvas) return grainCanvas;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const x = c.getContext('2d')!;
+  const img = x.createImageData(128, 128);
+  let seed = 1234567;
+  for (let i = 0; i < img.data.length; i += 4) {
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    const v = 128 + ((seed >>> 16) % 48) - 24;
+    img.data[i] = v;
+    img.data[i + 1] = v;
+    img.data[i + 2] = v;
+    img.data[i + 3] = 255;
+  }
+  x.putImageData(img, 0, 0);
+  grainCanvas = c;
+  return c;
+}
 
 export class MapRenderer {
   /** Son görünüm (ekranlar arası korunur) */
@@ -97,6 +132,7 @@ export class MapRenderer {
   private selOutline: Path2D | null = null;
   private selKey = '';
   private patterns = new Map<string, CanvasPattern>();
+  private reliefPaths = new Map<number, { color: string; path: Path2D }[]>();
 
   constructor(canvas: HTMLCanvasElement, base: HTMLCanvasElement, g: MapGeometry, world: World) {
     this.canvas = canvas;
@@ -305,7 +341,7 @@ export class MapRenderer {
     if (!ctx) return;
     const v = this.view;
     const { dpr } = this;
-    const baseKey = `${this.idOf(coloring)}|${s.versions.owners}|${sel.country}|${opts.quality}|${opts.lang}|${this.canvas.width}x${this.canvas.height}`;
+    const baseKey = `${this.idOf(coloring)}|${s.versions.owners}|${sel.country}|${opts.quality}|${opts.lang}|${opts.relief}|${this.canvas.width}x${this.canvas.height}`;
     const bv = this.baseView;
     const sameView = !!bv && bv.x === v.x && bv.y === v.y && bv.scale === v.scale;
     const interacting = performance.now() - this.lastViewChange < 160;
@@ -364,13 +400,30 @@ export class MapRenderer {
     this.ensureBorders(s, lod);
     this.ensureLabels(s, opts.lang);
     const k = v.scale * dpr;
+    const px = 1 / v.scale;
+    const fancy = opts.quality !== 'low';
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = OCEAN_DEEP;
     ctx.fillRect(0, 0, base.width, base.height);
     ctx.setTransform(k, 0, 0, k, -v.x * k, -v.y * k);
-    ctx.fillStyle = OCEAN;
+    // Okyanus: ortası açık, kutuplara doğru koyulaşan derinlik
+    const og = ctx.createLinearGradient(0, 0, 0, this.g.height);
+    og.addColorStop(0, '#0f1f33');
+    og.addColorStop(0.45, '#16304d');
+    og.addColorStop(1, '#0f1f33');
+    ctx.fillStyle = og;
     ctx.fillRect(0, 0, this.g.width, this.g.height);
     this.drawGraticule(ctx, v.scale);
+    // Kıyılarda sığ su parıltısı (karanın altında kalan yarısı görünmez)
+    if (fancy) {
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(110,170,225,0.07)';
+      ctx.lineWidth = px * 12;
+      ctx.stroke(lod.coast);
+      ctx.strokeStyle = 'rgba(140,195,240,0.10)';
+      ctx.lineWidth = px * 5;
+      ctx.stroke(lod.coast);
+    }
     for (const fg of this.fillGroups) {
       ctx.fillStyle = fg.color;
       ctx.fill(fg.path, 'evenodd');
@@ -386,9 +439,15 @@ export class MapRenderer {
         ctx.fill(sg.path, 'evenodd');
       }
     }
-    ctx.fillStyle = OCEAN;
+    // Arazi kabartması
+    if (opts.relief && fancy) {
+      for (const r of this.relief(lod)) {
+        ctx.fillStyle = r.color;
+        ctx.fill(r.path, 'evenodd');
+      }
+    }
+    ctx.fillStyle = '#183554';
     ctx.fill(lod.lakes, 'evenodd');
-    const px = 1 / v.scale;
     if (opts.quality !== 'low') {
       ctx.strokeStyle = 'rgba(96,150,210,0.55)';
       ctx.lineCap = 'round';
@@ -411,6 +470,11 @@ export class MapRenderer {
     ctx.lineWidth = px * 0.9;
     ctx.stroke(lod.coast);
     if (this.borderPath) {
+      if (fancy) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+        ctx.lineWidth = px * 3.4;
+        ctx.stroke(this.borderPath);
+      }
       ctx.strokeStyle = 'rgba(12,14,18,0.9)';
       ctx.lineWidth = px * 1.3;
       ctx.stroke(this.borderPath);
@@ -435,10 +499,46 @@ export class MapRenderer {
         ctx.stroke(this.selOutline);
       }
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (fancy) {
+      // Kâğıt dokusu ve kenar gölgesi
+      const pat = ctx.createPattern(grain(), 'repeat');
+      if (pat) {
+        ctx.globalCompositeOperation = 'soft-light';
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = pat;
+        ctx.fillRect(0, 0, base.width, base.height);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      const r = Math.hypot(base.width, base.height) / 2;
+      const vg = ctx.createRadialGradient(base.width / 2, base.height / 2, r * 0.55, base.width / 2, base.height / 2, r);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.32)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, base.width, base.height);
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.drawLabels(ctx, s, opts);
     this.baseView = { ...v };
-    this.baseKey = `${this.idOf(coloring)}|${s.versions.owners}|${sel.country}|${opts.quality}|${opts.lang}|${this.canvas.width}x${this.canvas.height}`;
+    this.baseKey = `${this.idOf(coloring)}|${s.versions.owners}|${sel.country}|${opts.quality}|${opts.lang}|${opts.relief}|${this.canvas.width}x${this.canvas.height}`;
+  }
+
+  /** Arazi türüne göre gruplanmış bölge yolları (ayrıntı seviyesi başına bir kez) */
+  private relief(lod: MapLod): { color: string; path: Path2D }[] {
+    let list = this.reliefPaths.get(lod.tol);
+    if (list) return list;
+    const groups = new Map<Terrain, Path2D>();
+    for (let p = 0; p < this.world.P; p++) {
+      const tr = this.world.terrain[p];
+      if (!RELIEF[tr]) continue;
+      let path = groups.get(tr);
+      if (!path) groups.set(tr, (path = new Path2D()));
+      path.addPath(lod.provincePaths[p]);
+    }
+    list = [...groups.entries()].map(([tr, path]) => ({ color: RELIEF[tr]!, path }));
+    this.reliefPaths.set(lod.tol, list);
+    return list;
   }
 
   private drawGraticule(ctx: CanvasRenderingContext2D, scale: number) {

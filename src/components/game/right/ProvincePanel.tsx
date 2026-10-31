@@ -4,7 +4,7 @@ import { Anchor, Hammer, Shield, Swords, X } from 'lucide-react';
 import { useGame } from '@/store/game';
 import { useUI } from '@/store/ui';
 import { useT, useLang } from '@/i18n';
-import { Bar, Button, Flag, SectionTitle, Stat, useConfirm, useToasts } from '@/components/ui';
+import { Bar, Button, Collapsible, Flag, SectionTitle, Stat, useConfirm, useToasts } from '@/components/ui';
 import { useCommand, useReadCtx, useCountryName } from '../hooks';
 import { BUILDING_IDS, type BuildingId, type UnitType } from '@/game/types';
 import { BUILDING_DEFS } from '@/game/defs/buildings';
@@ -80,7 +80,74 @@ export default function ProvincePanel({ id }: { id: number }) {
         </div>
       )}
 
-      <SectionTitle>{t('common.details')}</SectionTitle>
+      <div className="mt-2 grid grid-cols-3 gap-1.5 text-center">
+        <div className="rounded border border-line bg-panel-2 px-1 py-1.5">
+          <div className="text-[10px] uppercase tracking-wide text-muted">{t('province.population')}</div>
+          <div className="tabular text-[15px] text-ink">{formatCompact(ps.pop, lang)}</div>
+        </div>
+        <div className="rounded border border-line bg-panel-2 px-1 py-1.5">
+          <div className="text-[10px] uppercase tracking-wide text-muted">{mine ? t('simple.incomeMonth') : t('province.output')}</div>
+          <div className={`tabular text-[15px] ${mine ? 'text-good' : 'text-ink'}`}>{formatMoney(mine ? income : provinceOutput(ctx, id), lang)}</div>
+        </div>
+        <div className="rounded border border-line bg-panel-2 px-1 py-1.5">
+          <div className="text-[10px] uppercase tracking-wide text-muted">{t('province.unrest')}</div>
+          <div className={`tabular text-[15px] ${ps.unrest > 60 ? 'text-danger' : ps.unrest > 30 ? 'text-warn' : 'text-good'}`}>{Math.round(ps.unrest)}</div>
+        </div>
+      </div>
+      <div className="mt-1 text-xs text-muted">
+        {t(`terrain.${terr}`)} · {t('province.defense')} +{formatPercent(TERRAIN_DEFS[terr].defense + fort * 0.15, lang)}
+        {wp.coastal && <Anchor size={12} className="ml-1 inline text-info" />}
+      </div>
+
+      {armies.length > 0 && <SectionTitle>{t('province.armies')}</SectionTitle>}
+      {armies.map((a) => (
+        <button
+          type="button"
+          key={a.id}
+          onClick={() => ui.selectArmies([a.id])}
+          className="mb-1 flex w-full items-center justify-between rounded border border-line bg-panel-2 px-2 py-1 text-left text-xs hover:border-line-2"
+        >
+          <span className="flex items-center gap-1.5">
+            <Flag code={state.countries[a.owner]?.flag ?? 'x-rebels'} className="h-3" />
+            {a.isNavy ? <Anchor size={12} /> : <Shield size={12} />} {a.name}
+          </span>
+          <span className="tabular text-ink-2">{state.rules.fogOfWar && a.owner !== me ? '?' : formatInt(armySize(a), lang)}</span>
+        </button>
+      ))}
+
+      {mine && controlled && <Buildings id={id} />}
+      {mine && controlled && (
+        <>
+          <SectionTitle>{t('province.recruitment')}</SectionTitle>
+          <QuickRecruit id={id} />
+          {ps.recruits.length > 0 && (
+            <div className="mt-2">
+              <div className="text-xs text-muted">{t('province.recruitQueue')}</div>
+              {ps.recruits.map((r, i) => (
+                <div key={i} className="mt-1 rounded bg-panel-2 px-2 py-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span>
+                      {formatInt(r.amount, lang)} {t(`unit.${r.unit}`)}
+                    </span>
+                    <button type="button" className="text-muted hover:text-danger" onClick={() => cmd({ type: 'cancelRecruit', province: id, index: i })} aria-label={t('province.cancel')}>
+                      <X size={13} />
+                    </button>
+                  </div>
+                  <Bar value={r.totalDays - r.daysLeft} max={r.totalDays} className="mt-1" />
+                  <div className="mt-0.5 text-right text-muted">{t('common.days', { n: Math.ceil(r.daysLeft) })}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {mine && controlled && (
+        <Collapsible title={t('simple.otherUnits')}>
+          <Recruit id={id} unit={unit} setUnit={setUnit} amount={amount} setAmount={setAmount} />
+        </Collapsible>
+      )}
+      <Collapsible title={t('simple.details')}>
       {wp.city && <Stat label={t('province.city')} value={`${lang === 'en' ? wp.city.nameEn : wp.city.name}${wp.city.capital ? ' ★' : ''}`} />}
       <Stat label={t('province.population')} value={formatCompact(ps.pop, lang)} />
       <Stat label={t('province.output')} value={formatMoney(provinceOutput(ctx, id), lang)} />
@@ -110,50 +177,7 @@ export default function ProvincePanel({ id }: { id: number }) {
         {t('province.resources')}: {t('resource.food')} {wp.res[0]} · {t('resource.iron')} {wp.res[1]} · {t('resource.coal')} {wp.res[2]} · {t('resource.timber')} {wp.res[3]}
       </div>
 
-      <SectionTitle>{t('province.armies')}</SectionTitle>
-      {armies.length === 0 && <p className="text-xs text-muted">{t('province.noArmies')}</p>}
-      {armies.map((a) => (
-        <button
-          type="button"
-          key={a.id}
-          onClick={() => ui.selectArmies([a.id])}
-          className="mb-1 flex w-full items-center justify-between rounded border border-line bg-panel-2 px-2 py-1 text-left text-xs hover:border-line-2"
-        >
-          <span className="flex items-center gap-1.5">
-            <Flag code={state.countries[a.owner]?.flag ?? 'x-rebels'} className="h-3" />
-            {a.isNavy ? <Anchor size={12} /> : <Shield size={12} />} {a.name}
-          </span>
-          <span className="tabular text-ink-2">{state.rules.fogOfWar && a.owner !== me ? '?' : formatInt(armySize(a), lang)}</span>
-        </button>
-      ))}
-      {!mine && <p className="mt-1 text-[11px] text-muted">{t('province.selectArmyHint')}</p>}
-
-      {mine && controlled && <Buildings id={id} />}
-      {mine && controlled && (
-        <>
-          <SectionTitle>{t('province.recruitment')}</SectionTitle>
-          <Recruit id={id} unit={unit} setUnit={setUnit} amount={amount} setAmount={setAmount} />
-          {ps.recruits.length > 0 && (
-            <div className="mt-2">
-              <div className="text-xs text-muted">{t('province.recruitQueue')}</div>
-              {ps.recruits.map((r, i) => (
-                <div key={i} className="mt-1 rounded bg-panel-2 px-2 py-1 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span>
-                      {formatInt(r.amount, lang)} {t(`unit.${r.unit}`)}
-                    </span>
-                    <button type="button" className="text-muted hover:text-danger" onClick={() => cmd({ type: 'cancelRecruit', province: id, index: i })} aria-label={t('province.cancel')}>
-                      <X size={13} />
-                    </button>
-                  </div>
-                  <Bar value={r.totalDays - r.daysLeft} max={r.totalDays} className="mt-1" />
-                  <div className="mt-0.5 text-right text-muted">{t('common.days', { n: Math.ceil(r.daysLeft) })}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+      </Collapsible>
 
       {/* Toprak işlemleri */}
       {!mine && ps.owner !== REBEL_TAG && owner?.alive && (
@@ -183,8 +207,7 @@ export default function ProvincePanel({ id }: { id: number }) {
         </>
       )}
       {mine && controlled && state.countries[me].capital !== id && (
-        <>
-          <SectionTitle>{t('action.cedeProvince')}</SectionTitle>
+        <Collapsible title={t('action.cedeProvince')}>
           <div className="flex gap-1.5">
             <CedeSelect value={cedeTo} onChange={setCedeTo} />
             <Button
@@ -205,7 +228,7 @@ export default function ProvincePanel({ id }: { id: number }) {
               {t('common.apply')}
             </Button>
           </div>
-        </>
+        </Collapsible>
       )}
     </div>
   );
@@ -262,39 +285,41 @@ function Buildings({ id }: { id: number }) {
           <Bar value={ps.construction.totalDays - ps.construction.daysLeft} max={ps.construction.totalDays} className="mt-1" />
         </div>
       )}
-      <ul className="flex flex-col gap-1">
+      <div className="grid grid-cols-2 gap-1">
         {BUILDING_IDS.map((b, idx) => {
           const lvl = ps.buildings[idx];
           const def = BUILDING_DEFS[b as BuildingId];
           const av = buildingAvailability(ctx, me, id, b);
           const max = lvl >= def.maxLevel;
+          const hidden = !max && !av.ok && (av.reason === 'build.needsCoast' || av.reason === 'build.badTerrain');
+          if (hidden) return null;
           return (
-            <li key={b} className="rounded border border-line bg-panel-2 px-2 py-1.5" title={t(`building.${b}.desc`)}>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-ink">{t(`building.${b}`)}</span>
-                <span className="flex gap-0.5">
+            <button
+              type="button"
+              key={b}
+              disabled={max || !av.ok}
+              onClick={() => cmd({ type: 'build', province: id, building: b })}
+              title={`${t(`building.${b}.desc`)}${!max && !av.ok && av.reason ? `\n${t(av.reason, av.reasonParams)}` : ''}`}
+              className={`rounded border px-2 py-1.5 text-left transition-colors ${max ? 'border-line/60 bg-panel-2/50' : av.ok ? 'border-line-2 bg-panel-2 hover:border-gold-2 hover:bg-panel-3' : 'border-line/60 bg-panel-2/50 opacity-60'}`}
+            >
+              <div className="flex items-center justify-between gap-1">
+                <span className="flex items-center gap-1 truncate text-[12px] text-ink">
+                  {!max && av.ok && <Hammer size={11} className="shrink-0 text-gold" />}
+                  {t(`building.${b}`)}
+                </span>
+                <span className="flex shrink-0 gap-0.5">
                   {Array.from({ length: def.maxLevel }, (_, i) => (
-                    <span key={i} className={`h-2 w-3 rounded-sm ${i < lvl ? 'bg-gold' : 'bg-line-2'}`} />
+                    <span key={i} className={`h-1.5 w-2 rounded-sm ${i < lvl ? 'bg-gold' : 'bg-line-2'}`} />
                   ))}
                 </span>
               </div>
-              {!max && (
-                <div className="mt-1 flex items-center justify-between gap-2 text-[11px]">
-                  <span className={av.ok ? 'text-muted' : 'text-faint'}>
-                    {av.ok || av.reason === 'err.noMoney'
-                      ? `${formatMoney(av.cost, lang)} · ${t('common.days', { n: av.days })}`
-                      : t(av.reason ?? 'err.unknown', av.reasonParams)}
-                  </span>
-                  <Button size="sm" disabled={!av.ok} onClick={() => cmd({ type: 'build', province: id, building: b })}>
-                    <Hammer size={12} /> {t('province.levelShort', { n: av.level })}
-                  </Button>
-                </div>
-              )}
-              {max && <div className="mt-0.5 text-[11px] text-muted">{t('province.maxLevel')}</div>}
-            </li>
+              <div className="mt-0.5 truncate text-[10.5px] text-muted">
+                {max ? t('province.maxLevel') : av.ok || av.reason === 'err.noMoney' ? `${formatMoney(av.cost, lang)} · ${t('common.days', { n: av.days })}` : t(av.reason ?? 'err.unknown', av.reasonParams)}
+              </div>
+            </button>
           );
         })}
-      </ul>
+      </div>
     </>
   );
 }
@@ -359,6 +384,46 @@ function Recruit({ id, unit, setUnit, amount, setAmount }: { id: number; unit: U
       <Button variant="primary" size="sm" className="mt-1.5 w-full" disabled={!av.ok} onClick={() => cmd({ type: 'recruit', province: id, unit: cur, amount: amt })}>
         {t('province.recruitBtn')}
       </Button>
+    </div>
+  );
+}
+
+/** Tek tıkla piyade toplama (en sık yapılan iş); diğer birlik türleri katlanır bölümde */
+function QuickRecruit({ id }: { id: number }) {
+  const t = useT();
+  const lang = useLang();
+  const state = useGame((s) => s.state)!;
+  const ctx = useReadCtx()!;
+  const cmd = useCommand();
+  const me = state.player;
+  const max = maxRecruitAmount(ctx, id, 'infantry');
+  const presets = [5000, 10000, 20000].filter((n) => n <= max);
+  if (!presets.length) presets.push(max);
+  const info = recruitAvailability(ctx, me, id, 'infantry', presets[0]);
+  return (
+    <div>
+      <div className="grid grid-cols-3 gap-1">
+        {presets.map((n) => {
+          const av = recruitAvailability(ctx, me, id, 'infantry', n);
+          return (
+            <Button
+              key={n}
+              size="sm"
+              variant={av.ok ? 'primary' : 'secondary'}
+              disabled={!av.ok}
+              title={av.ok || av.reason === 'err.noMoney' ? t('province.recruitInfo', { cost: formatMoney(av.cost, lang), manpower: formatInt(n * UNIT_DEFS.infantry.manpower, lang), days: av.days }) : t(av.reason ?? 'err.unknown', av.reasonParams)}
+              onClick={() => cmd({ type: 'recruit', province: id, unit: 'infantry', amount: n })}
+            >
+              +{formatCompact(n, lang, 0)} {t('unit.infantry')}
+            </Button>
+          );
+        })}
+      </div>
+      <div className={`mt-1 text-[11px] ${info.ok ? 'text-muted' : 'text-danger'}`}>
+        {info.ok || info.reason === 'err.noMoney'
+          ? t('simple.recruitEach', { n: formatCompact(presets[0], lang, 0), cost: formatMoney(info.cost, lang), days: info.days })
+          : t(info.reason ?? 'err.unknown', info.reasonParams)}
+      </div>
     </div>
   );
 }

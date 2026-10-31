@@ -224,6 +224,8 @@ export interface Country {
   /** Araştırılmış teknolojiler */
   techs: string[];
   research: { current: string | null; progress: number };
+  /** oyuncu için: araştırma bitince sıradaki teknolojiyi otomatik seç (tanımsız = açık) */
+  autoResearch?: boolean;
   /** Toprak talepleri (bölge indeksleri) */
   claims: number[];
   resources: ResourceLedger;

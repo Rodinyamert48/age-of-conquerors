@@ -28,6 +28,7 @@ import { stabilityTick, rebellionTick } from './stability';
 import { eventsTick } from './events';
 import { victoryTick } from './victory';
 import { aiTick } from './ai';
+import { aiResearch } from './ai/economy';
 import { REBEL_TAG, armySoldiers, atWar, hostileArmies, setRelation, relation } from './query';
 import { armiesAt } from './ctx';
 import { notify } from './notify';
@@ -277,6 +278,8 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
   }
   computeAllBudgets(ctx);
   s.meta.playerStartProvinces = provincesOf(ctx, opts.player).length;
+  // Otomatik araştırma ilk günden başlasın
+  aiResearch(ctx, s.countries[opts.player]);
   recordHistory(ctx);
   notify(ctx, 'system', 'notif.gameStarted', { country: s.countries[opts.player].name }, { involves: [opts.player], severity: 'info' });
   return ctx;
@@ -390,6 +393,9 @@ export function advanceTurn(ctx: Ctx): void {
   // 6. İnşaat, asker toplama, araştırma
   constructionTick(ctx, dt);
   researchTick(ctx, dt);
+  // Oyuncunun otomatik araştırması (yapay zekânın seçim mantığıyla)
+  const pc = s.countries[s.player];
+  if (pc?.alive && !pc.research.current && pc.autoResearch !== false) aiResearch(ctx, pc);
   // 7. Yapay zekâ
   aiTick(ctx, newDay);
   // 8. Olaylar, istikrar, isyanlar

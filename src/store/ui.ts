@@ -47,6 +47,13 @@ interface UIStore {
 
 let nonce = 1;
 
+/** Sade arayüzde dört sekme vardır: ekonomi ve politikalar Ülke'de, savaşlar Ordu sekmesinde */
+function normalizeTab(t: LeftTab): LeftTab {
+  if (t === 'economy' || t === 'policies') return 'country';
+  if (t === 'wars') return 'armies';
+  return t;
+}
+
 export const useUI = create<UIStore>()((set, get) => ({
   leftTab: null,
   right: null,
@@ -57,8 +64,11 @@ export const useUI = create<UIStore>()((set, get) => ({
   peace: null,
   pauseMenu: false,
   logOpen: false,
-  setLeftTab: (t) => set({ leftTab: t }),
-  toggleLeftTab: (t) => set({ leftTab: get().leftTab === t ? null : t }),
+  setLeftTab: (t) => set({ leftTab: t && normalizeTab(t) }),
+  toggleLeftTab: (t) => {
+    const n = normalizeTab(t);
+    set({ leftTab: get().leftTab === n ? null : n });
+  },
   openRight: (v) => set({ right: v }),
   selectArmies: (ids) => set({ selectedArmies: ids, right: ids.length ? { kind: 'army' } : get().right?.kind === 'army' ? null : get().right, moveMode: false }),
   toggleArmy: (id) => {

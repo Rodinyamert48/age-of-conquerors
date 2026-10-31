@@ -36,7 +36,8 @@ STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/age-of-conquerors npm run build   # çık
 
 ## Oyunun içeriği
 
-- **Harita:** Natural Earth verisinden üretilmiş 2.863 bölge, 4.167 deniz düğümü, boğaz/kanal denetimi, nehirler, göller ve başkentler. Yakınlaştırılabilir Canvas haritası; siyasi, ekonomik, diplomatik, askerî kontrol, istikrar, ikmal ve arazi katmanları. İşgal edilmiş bölgeler çizgili gösterilir; ordular, rotalar, muharebeler ve kuşatmalar haritada görünür.
+- **Tasarım ilkesi:** Age of History 2 kadar sade, Age of History 3 kadar güzel. Dört sekme (Ülke · Ordu ve Savaş · Diplomasi · Araştırma); her panelde önce temel bilgiler ve tek tıklık eylemler (inşa et, piyade topla, ittifak öner…), ayrıntılar katlanır bölümlerde. Araştırma varsayılan olarak otomatiktir.
+- **Harita:** Natural Earth verisinden üretilmiş 2.863 bölge, 4.167 deniz düğümü, boğaz/kanal denetimi, nehirler, göller ve başkentler. Yakınlaştırılabilir Canvas haritası; araziye göre kabartma tonları, kıyılarda sığ su parıltısı, gölgeli sınırlar ve kâğıt dokusu. Siyasi, diplomatik ve ekonomik katmanlar (istikrar, askerî kontrol, ikmal ve arazi "Diğer" listesinde). İşgal edilmiş bölgeler çizgili gösterilir; ordular, rotalar, muharebeler ve kuşatmalar haritada görünür.
 - **Senaryo:** *Modern Dünya — 1 Ocak 2020* tam ve oynanabilir: 199 ülke, NATO ve KGAÖ, AB tek pazarı, gümrük birlikleri ve serbest ticaret anlaşmaları, savunma paktları, çekirdek bölge ve toprak talepleri, yaklaşık ordu büyüklükleri, senaryoya özgü olaylar. 1444, 1815, 1914, 1936, 1939 ve 1945 senaryoları menüde "veri hazırlanıyor" olarak görünür; doğrulanmış veri olmadan uydurma içerikle açılmazlar (bkz. *Yeni senaryo eklemek*).
 - **Zaman:** Günlük (varsayılan), haftalık ve aylık tur adımı; duraklat, tek tur ilerlet, oynat ve 5 hız kademesi. Her tur sabit sırayla işlenir: hareket → muharebe/kuşatma → ekonomi → nüfus/ikmal → diplomatik süreler → inşaat/asker toplama/araştırma → yapay zekâ → olaylar/istikrar/isyanlar → zafer kontrolü → tarih. Simülasyon tohumlu RNG ile deterministiktir.
 - **Ekonomi:** Hazine, vergi/ticaret/üretim/ihracat gelirleri ile ordu, donanma, tahkimat, politika, ithalat ve faiz giderlerinin ayrıntılı dökümü; borçlanma ve iflas. Sekiz bina türü (tarım, sanayi, ticaret merkezi, liman, yollar, üniversite, askerî tesis, tahkimat): maliyet, süre, seviye, teknoloji ve arazi kısıtlarıyla. Yiyecek, demir, kömür, kereste stokları; açıkların otomatik ithalatı, fazlaların ihracatı.
@@ -59,7 +60,7 @@ STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/age-of-conquerors npm run build   # çık
 | Bir tur ilerlet | N |
 | Hız azalt / artır | `-` / `=` |
 | Hız kademesi seç | 1 – 5 |
-| Ülke / Ordular / Diplomasi / Ekonomi / Araştırma / Politikalar / Savaşlar | C / A / D / E / R / P / W |
+| Ülke / Ordu ve Savaş / Diplomasi / Araştırma | C (veya E, P) / A (veya W) / D / R |
 | Harita katmanını değiştir | M |
 | Başkente git | H |
 | Hızlı kayıt | F5 |
@@ -98,7 +99,7 @@ tests/               Vitest testleri
 
 - **Simülasyon iş parçacığı:** Oyun durumu Web Worker'da tutulur ve ilerletilir; arayüz yalnızca komut gönderir ve her turdan sonra durum anlık görüntüsünü alır. Rota önizleme ve muharebe tahmini gibi salt okunur sorgular ana iş parçacığında son anlık görüntü üzerinde hesaplanır. Böylece arayüz, yoğun simülasyon sırasında da akıcı kalır.
 - **Deterministik durum:** `GameState` JSON'a çevrilebilir tek bir nesnedir; RNG durumu (mulberry32) kayıtla birlikte saklanır. Aynı tohum ve aynı komutlar aynı sonucu üretir.
-- **Performans:** Bölge yolları `Path2D` olarak önbelleğe alınır, dolgular renk gruplarıyla çizilir, ordu işaretleri ekran uzayında sınırlı sayıda çizilir, isabet testi ızgara üzerinden yapılır. Rota bulma tipli dizilerle Dijkstra kullanır; yapay zekâ her gün değil zorluğa göre aralıklarla düşünür. Modern senaryoda bir gün ortalama ~20 ms sürer.
+- **Performans:** Harita iki tuvalden oluşur: taban katmanı (renkler, sınırlar, nehirler, adlar) yalnızca renkler, sahiplik ya da görünüm değişince çizilir; kaydırma/yakınlaştırma sırasında GPU ile taşınır ve hareket durunca tam kalitede yenilenir. Fare vurgusu, ordular ve rotalar hafif üst katmandadır. Uzak bakışta sadeleştirilmiş geometri (ayrıntı seviyeleri) kullanılır. Simülasyon arayüze saniyede en çok ~4 durum gönderir; kayıtları simülasyon iş parçacığı yazar. Ölçülen (Chromium): duraklatılmışken ve hız 3'te 60 FPS, en yüksek hızda ~57 FPS. İsabet testi ızgara üzerinden yapılır. Rota bulma tipli dizilerle Dijkstra kullanır; yapay zekâ her gün değil zorluğa göre aralıklarla düşünür. Modern senaryoda bir gün ortalama ~20 ms sürer.
 
 ## Harita verisi ve yeniden üretme
 

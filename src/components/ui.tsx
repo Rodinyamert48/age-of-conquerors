@@ -4,7 +4,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { create } from 'zustand';
-import { X } from 'lucide-react';
+import { ChevronDown, X, type LucideIcon } from 'lucide-react';
 import { playSound } from '@/lib/audio';
 import { asset } from '@/lib/base';
 
@@ -64,6 +64,37 @@ export function Stat({ label, value, tone, hint }: { label: ReactNode; value: Re
     <div className="flex items-baseline justify-between gap-2 py-[3px] text-[13px]" title={hint}>
       <span className="text-muted">{label}</span>
       <span className={`tabular text-right ${tone ? tones[tone] : 'text-ink'}`}>{value}</span>
+    </div>
+  );
+}
+
+/** Katlanır bölüm: ayrıntılar varsayılan olarak gizli kalır (sade arayüz) */
+export function Collapsible({ title, children, defaultOpen = false, right }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean; right?: ReactNode }) {
+  return (
+    <details className="group mt-2 rounded border border-line bg-panel-2/40" open={defaultOpen}>
+      <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-2 px-2.5 py-1.5 hover:bg-white/[0.03] [&::-webkit-details-marker]:hidden">
+        <span className="font-display text-[13px] uppercase tracking-[0.12em] text-gold-soft">{title}</span>
+        <span className="flex items-center gap-2 text-muted">
+          {right}
+          <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
+        </span>
+      </summary>
+      <div className="border-t border-line px-2.5 py-2">{children}</div>
+    </details>
+  );
+}
+
+/** Büyük gösterge kartı (Ülke özetindeki temel sayılar) */
+export function StatCard({ icon: Icon, label, value, sub, tone, children }: { icon: LucideIcon; label: ReactNode; value: ReactNode; sub?: ReactNode; tone?: 'good' | 'bad' | 'warn'; children?: ReactNode }) {
+  const tones = { good: 'text-good', bad: 'text-danger', warn: 'text-warn' };
+  return (
+    <div className="rounded border border-line bg-panel-2 px-2.5 py-2">
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted">
+        <Icon size={13} /> {label}
+      </div>
+      <div className="mt-0.5 font-display text-xl leading-tight text-ink">{value}</div>
+      {sub !== undefined && <div className={`text-xs tabular ${tone ? tones[tone] : 'text-ink-2'}`}>{sub}</div>}
+      {children}
     </div>
   );
 }

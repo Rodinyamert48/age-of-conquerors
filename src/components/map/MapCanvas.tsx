@@ -109,6 +109,7 @@ export default function MapCanvas(props: Props) {
       previewPath: l.props.previewPath ?? null,
       previewArmy: l.props.previewArmy ?? null,
       fog: l.rctx.s.rules.fogOfWar,
+      relief: l.props.mode === 'political' || l.props.mode === 'diplomatic',
     }, time);
     if (r.needsSettle && !settleTimer.current) {
       settleTimer.current = setTimeout(() => {

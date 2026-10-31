@@ -255,6 +255,9 @@ function Gradient({ stops, low, high }: { stops: RGB[]; low: string; high: strin
   );
 }
 
+/** Sade görünüm: üç temel katman düğme, diğerleri açılır listede */
+const MAIN_MODES: MapMode[] = ['political', 'diplomatic', 'economic'];
+
 export function MapModeBar() {
   const t = useT();
   const mode = useUI((s) => s.mapMode);
@@ -299,7 +302,7 @@ export function MapModeBar() {
     <div className="pointer-events-none absolute bottom-2 left-2 z-10 flex max-w-[calc(100%-70px)] flex-col items-start gap-1">
       {legend[mode] && <div className="pointer-events-auto flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded border border-line bg-panel/90 px-2 py-1 text-[11px] text-ink-2">{legend[mode]}</div>}
       <div className="pointer-events-auto flex flex-wrap overflow-hidden rounded border border-line-2 bg-panel/90">
-        {MAP_MODES.map((m) => (
+        {MAIN_MODES.map((m) => (
           <button
             type="button"
             key={m}
@@ -309,6 +312,19 @@ export function MapModeBar() {
             {t(`mapMode.${m}`)}
           </button>
         ))}
+        <select
+          value={MAIN_MODES.includes(mode) ? '' : mode}
+          onChange={(e) => e.target.value && setMode(e.target.value as MapMode)}
+          aria-label={t('simple.moreMapModes')}
+          className={`border-l border-line px-1.5 py-1.5 text-xs outline-none ${MAIN_MODES.includes(mode) ? 'bg-transparent text-ink-2' : 'bg-gold/85 text-[#1a1408]'}`}
+        >
+          <option value="">{t('simple.moreMapModes')}…</option>
+          {MAP_MODES.filter((m) => !MAIN_MODES.includes(m)).map((m) => (
+            <option key={m} value={m}>
+              {t(`mapMode.${m}`)}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

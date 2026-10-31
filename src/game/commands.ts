@@ -29,6 +29,7 @@ export type Command =
   | { type: 'cancelBuild'; province: number }
   | { type: 'setPolicy'; policy: PolicyId; level: number }
   | { type: 'setResearch'; tech: string | null }
+  | { type: 'setAutoResearch'; value: boolean }
   | { type: 'diplomacy'; action: DiploActionType; target: Tag; province?: number }
   | { type: 'answerProposal'; id: string; accept: boolean }
   | { type: 'declareWar'; target: Tag }
@@ -178,6 +179,10 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
       const lvl = Math.round(cmd.level);
       if (lvl < 0 || lvl > 4) return fail('err.invalidTarget');
       s.countries[me].policies[cmd.policy] = lvl;
+      return ok();
+    }
+    case 'setAutoResearch': {
+      s.countries[me].autoResearch = cmd.value;
       return ok();
     }
     case 'setResearch': {

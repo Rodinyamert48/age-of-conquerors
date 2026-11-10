@@ -347,16 +347,43 @@ export interface MovementHooks {
   onArrive: (ctx: Ctx, a: Army, node: number) => boolean; // true → dur
 }
 
+/** Tur başına hareket bütçesi: kara adımı tüm turu, deniz adımı üçte birini kullanır (AoH2 düzeni) */
+export const TURN_BUDGET = 3;
+export function stepCost(w: World, to: number): number {
+  return to >= w.P ? 1 : TURN_BUDGET;
+}
+
+/** Rotanın kaç turda tamamlanacağı */
+export function pathTurns(ctx: Ctx, a: Army, path: number[] = a.path): number {
+  let turns = 0;
+  let budget = 0;
+  for (const n of path) {
+    const c = stepCost(ctx.w, n);
+    if (budget < c) {
+      turns++;
+      budget = TURN_BUDGET;
+    }
+    budget -= c;
+  }
+  return turns;
+}
+
+/**
+ * Tur tabanlı hareket (Age of History 2 gibi): her tur ordu karada bir bölge, denizde en çok
+ * üç deniz düğümü ilerler. Hareket süresi turun gün uzunluğundan bağımsızdır.
+ */
 export function movementTick(ctx: Ctx, dt: number, hooks: MovementHooks): void {
+  void dt;
   const { w, s } = ctx;
   const ids = Object.keys(s.armies).sort();
   for (const id of ids) {
     const a = s.armies[id];
     if (!a || a.battle || !a.path.length) continue;
-    let remaining = dt;
-    const speed = armyBaseSpeed(ctx, a);
-    while (remaining > 1e-9 && a.path.length) {
+    let budget = TURN_BUDGET;
+    while (a.path.length) {
       const next = a.path[0];
+      const cost = stepCost(w, next);
+      if (budget < cost) break;
       if (!canStep(ctx, a, a.location, next)) {
         a.path = [];
         a.progress = 0;
@@ -365,19 +392,12 @@ export function movementTick(ctx: Ctx, dt: number, hooks: MovementHooks): void {
         }
         break;
       }
-      const e = edgeIndex(w, a.location, next);
-      const need = edgeDays(ctx, a, e, speed) - a.progress;
-      if (remaining >= need) {
-        remaining -= need;
-        a.progress = 0;
-        a.location = next;
-        a.path.shift();
-        invalidateArmies(ctx);
-        if (hooks.onArrive(ctx, a, next)) break;
-      } else {
-        a.progress += remaining;
-        remaining = 0;
-      }
+      budget -= cost;
+      a.progress = 0;
+      a.location = next;
+      a.path.shift();
+      invalidateArmies(ctx);
+      if (hooks.onArrive(ctx, a, next)) break;
     }
     // Denizde mahsur kalan kara ordusu en yakın dost kıyıya yönelir
     if (!a.isNavy && a.location >= w.P && !a.path.length && !a.battle) {

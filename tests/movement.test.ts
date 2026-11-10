@@ -6,6 +6,7 @@ import { createArmy } from '@/game/construction';
 import { findPath, transportCapacity, TRANSPORT_PER_SHIP } from '@/game/movement';
 import { addTreatyIfMissing } from '@/game/diplomacy';
 import { landNeighbors } from '@/game/world';
+import { detectBattles } from '@/game/combat';
 import { armiesOf } from '@/game/ctx';
 import type { Ctx } from '@/game/ctx';
 
@@ -114,7 +115,7 @@ describe('hareket ve rota', () => {
     expect(runCommand(ctx, { type: 'declareWar', target: 'SYR' }).ok).toBe(true);
     const a = createArmy(ctx, 'TUR', sp, { infantry: 20000 });
     createArmy(ctx, 'SYR', sp, { infantry: 20000 });
-    advanceTurn(ctx);
+    detectBattles(ctx);
     expect(ctx.s.armies[a.id].battle).toBeTruthy();
     expect(runCommand(ctx, { type: 'moveArmy', army: a.id, target: tp }).error).toBe('err.inBattle');
   });

@@ -39,7 +39,9 @@ STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/age-of-conquerors npm run build   # çık
 - **Tasarım ilkesi:** Age of History 2 kadar sade, Age of History 3 kadar güzel. Dört sekme (Ülke · Ordu ve Savaş · Diplomasi · Araştırma); her panelde önce temel bilgiler ve tek tıklık eylemler (inşa et, piyade topla, ittifak öner…), ayrıntılar katlanır bölümlerde. Araştırma varsayılan olarak otomatiktir.
 - **Harita:** Natural Earth verisinden üretilmiş 2.863 bölge, 4.167 deniz düğümü, boğaz/kanal denetimi, nehirler, göller ve başkentler. Yakınlaştırılabilir Canvas haritası; araziye göre kabartma tonları, kıyılarda sığ su parıltısı, gölgeli sınırlar ve kâğıt dokusu. Siyasi, diplomatik ve ekonomik katmanlar (istikrar, askerî kontrol, ikmal ve arazi "Diğer" listesinde). İşgal edilmiş bölgeler çizgili gösterilir; ordular, rotalar, muharebeler ve kuşatmalar haritada görünür.
 - **Senaryo:** *Modern Dünya — 1 Ocak 2020* tam ve oynanabilir: 199 ülke, NATO ve KGAÖ, AB tek pazarı, gümrük birlikleri ve serbest ticaret anlaşmaları, savunma paktları, çekirdek bölge ve toprak talepleri, yaklaşık ordu büyüklükleri, senaryoya özgü olaylar. 1444, 1815, 1914, 1936, 1939 ve 1945 senaryoları menüde "veri hazırlanıyor" olarak görünür; doğrulanmış veri olmadan uydurma içerikle açılmazlar (bkz. *Yeni senaryo eklemek*).
-- **Zaman:** Günlük (varsayılan), haftalık ve aylık tur adımı; duraklat, tek tur ilerlet, oynat ve 5 hız kademesi. Her tur sabit sırayla işlenir: hareket → muharebe/kuşatma → ekonomi → nüfus/ikmal → diplomatik süreler → inşaat/asker toplama/araştırma → yapay zekâ → olaylar/istikrar/isyanlar → zafer kontrolü → tarih. Simülasyon tohumlu RNG ile deterministiktir.
+- **Tur sistemi (Age of History 2 gibi):** Oyun tur tabanlıdır. **Boşluk** tuşu ya da **Turu Bitir** düğmesi tam bir tur ilerletir ve durur (varsayılan tur uzunluğu 1 hafta; oyun menüsünden gün/ay yapılabilir). Her tur sabit sırayla işlenir: hareket → muharebe → ele geçirme → ekonomi → nüfus/ikmal → diplomatik süreler → inşaat/asker toplama/araştırma → yapay zekâ → olaylar/istikrar/isyanlar → zafer kontrolü → tarih. Simülasyon tohumlu RNG ile deterministiktir.
+- **Toprak ele geçirme (Age of History 2 gibi):** Ordular her turda karada bir bölge, denizde üç deniz düğümü ilerler. Düşman ordusu olan bölgeye girildiğinde muharebe aynı turda sonuçlanır; savunmasız düşman bölgesine giren ordu orayı anında ele geçirir ve bölge fatihin renginde görünür (eski sahibi ince çizgilerle). Barışta herkes ele geçirdiğini korur; bütün toprakları ele geçirilen ve ordusu kalmayan ülke haritadan silinir.
+- **Mobil:** Dokunmatik kontroller (dokun = seç, ordu seçiliyken bir bölgeye dokun = oraya git, iki parmakla yakınlaştır), alt panel olarak açılan bilgi ekranı ve dar ekranlara uyan üst çubuk.
 - **Ekonomi:** Hazine, vergi/ticaret/üretim/ihracat gelirleri ile ordu, donanma, tahkimat, politika, ithalat ve faiz giderlerinin ayrıntılı dökümü; borçlanma ve iflas. Sekiz bina türü (tarım, sanayi, ticaret merkezi, liman, yollar, üniversite, askerî tesis, tahkimat): maliyet, süre, seviye, teknoloji ve arazi kısıtlarıyla. Yiyecek, demir, kömür, kereste stokları; açıkların otomatik ithalatı, fazlaların ihracatı.
 - **Ordu ve donanma:** Dönemine göre açılan birlik türleri (piyade, hafif birlik, süvari, topçu, kuşatma, zırhlı, hava, donanma); para + insan gücü + süre ile asker toplama; moral, tecrübe, ikmal ve bakım. Dijkstra rota bulma (kara, boğaz geçişi, liman–deniz, deniz–deniz); deniz aşırı nakliye donanma kapasitesiyle sınırlıdır. Ordu birleştirme, bölme, terhis, rota önizleme.
 - **Muharebe:** Sayı, birlik türü, cephe genişliği, arazi, tahkimat, moral, tecrübe, ikmal, teknoloji ve komutan/politika değiştiricileriyle günlük turlarda işleyen muharebe; ayrıntılı muharebe raporu ve kazanma olasılığı tahmini. Kuşatmada bekleme ya da (kayıp vererek) hücum seçeneği.
@@ -56,17 +58,14 @@ STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/age-of-conquerors npm run build   # çık
 
 | Eylem | Varsayılan |
 | --- | --- |
-| Oynat / duraklat | Boşluk |
-| Bir tur ilerlet | N |
-| Hız azalt / artır | `-` / `=` |
-| Hız kademesi seç | 1 – 5 |
+| Turu bitir (tek tur) | Boşluk |
 | Ülke / Ordu ve Savaş / Diplomasi / Araştırma | C (veya E, P) / A (veya W) / D / R |
 | Harita katmanını değiştir | M |
 | Başkente git | H |
 | Hızlı kayıt | F5 |
 | Seçimi kaldır | Esc |
 | Ordu seç | Sol tık (Shift ile çoklu seçim) |
-| Hareket emri | Sağ tık ya da "Hareket ettir" + sol tık |
+| Hareket emri | Ordu seçiliyken hedef bölgeye tıkla/dokun (sağ tık da olur) |
 
 Kısayollar *Oyun Ayarları* ekranından değiştirilebilir.
 

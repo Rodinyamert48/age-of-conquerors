@@ -241,7 +241,8 @@ export class MapRenderer {
     const key = `${s.versions.owners}|${lod.tol}`;
     if (this.borderKey === key && this.borderPath) return;
     this.borderKey = key;
-    this.borderPath = countryBorders(this.g, (p) => s.provinces[p].owner, lod.arcs);
+    // Sınırlar fiilî kontrole göre: ele geçirilen topraklar fatihin sınırları içinde görünür
+    this.borderPath = countryBorders(this.g, (p) => (s.provinces[p].controller === REBEL_TAG ? s.provinces[p].owner : s.provinces[p].controller), lod.arcs);
   }
 
   private ensureLabels(s: GameState, lang: Lang) {
@@ -460,11 +461,19 @@ export class MapRenderer {
         ctx.stroke(lod.rivers[i]);
       }
     }
-    if (opts.quality !== 'low' && v.scale > 0.2) {
-      const a = Math.min(0.35, (v.scale - 0.2) * 0.5);
-      ctx.strokeStyle = `rgba(20,24,30,${a})`;
-      ctx.lineWidth = px * 0.6;
+    // Eyalet sınırları: koyu çizgi + ince açık kenar (kabartma etkisi), yakınlaştıkça belirginleşir
+    if (opts.quality !== 'low' && v.scale > 0.12) {
+      const a = Math.min(1, (v.scale - 0.12) * 1.6);
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = `rgba(8,10,14,${0.32 * a})`;
+      ctx.lineWidth = px * 1.1;
       ctx.stroke(lod.provinceBorders);
+      if (v.scale > 0.35) {
+        ctx.strokeStyle = `rgba(255,248,230,${0.09 * a})`;
+        ctx.lineWidth = px * 0.5;
+        ctx.stroke(lod.provinceBorders);
+      }
     }
     ctx.strokeStyle = 'rgba(10,14,20,0.75)';
     ctx.lineWidth = px * 0.9;
@@ -475,9 +484,16 @@ export class MapRenderer {
         ctx.lineWidth = px * 3.4;
         ctx.stroke(this.borderPath);
       }
-      ctx.strokeStyle = 'rgba(12,14,18,0.9)';
-      ctx.lineWidth = px * 1.3;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(12,14,18,0.92)';
+      ctx.lineWidth = px * 1.6;
       ctx.stroke(this.borderPath);
+      // İnce altın kenar (AoH3 tarzı)
+      if (fancy && v.scale > 0.25) {
+        ctx.strokeStyle = 'rgba(232,206,150,0.22)';
+        ctx.lineWidth = px * 0.55;
+        ctx.stroke(this.borderPath);
+      }
     }
     if (sel.country) {
       const key = `${sel.country}|${s.versions.owners}|${lod.tol}`;

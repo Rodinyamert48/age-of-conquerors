@@ -114,7 +114,12 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
         if (playing) schedule(SPEED_DELAYS[speed]);
         break;
       case 'step':
-        if (!ctx || playing || processing) return;
+        if (!ctx) return;
+        // Arayüz yanıt bekliyor: tur işlenemese de güncel durumu gönder
+        if (playing || processing) {
+          postState('turn');
+          return;
+        }
         processing = true;
         {
           const t0 = performance.now();

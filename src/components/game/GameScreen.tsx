@@ -49,9 +49,10 @@ export default function GameScreen() {
   useEffect(() => {
     if (!state || !ctx) return;
     const cap = state.countries[state.player]?.capital;
-    if (cap !== undefined && cap >= 0) ui.focusOn(ctx.w.x[cap], ctx.w.y[cap], 0.55);
+    if (cap !== undefined && cap >= 0) ui.focusOn(ctx.w.x[cap], ctx.w.y[cap], 0.5);
+    // Okuma bağlamı ilk çizimde henüz hazır olmayabilir: hazır olunca bir kez odaklan
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state?.player]);
+  }, [state?.player, !!ctx]);
 
   const issueMove = useCallback(
     async (node: number) => {
@@ -83,7 +84,10 @@ export default function GameScreen() {
         if (u.selectedArmies.length && node >= 0) void issueMove(node);
         return;
       }
-      if (u.moveMode && u.selectedArmies.length && node >= 0) {
+      // Age of History 2 gibi: kendi ordun seçiliyken bir bölgeye (ya da denize) dokun → oraya git.
+      // Ordunun bulunduğu bölgeye dokunmak bölge bilgisini açar.
+      const own = u.selectedArmies.filter((id) => st.armies[id]?.owner === st.player);
+      if (own.length && node >= 0 && !c.army && !c.battle && (u.moveMode || node !== st.armies[own[0]].location)) {
         void issueMove(node);
         return;
       }
@@ -153,24 +157,9 @@ export default function GameScreen() {
       const u = useUI.getState();
       e.preventDefault();
       switch (action) {
-        case 'togglePause':
-          g.togglePlay();
-          break;
-        case 'step':
-          g.step();
-          break;
-        case 'speedUp':
-          g.setSpeed(g.speed + 1);
-          break;
-        case 'speedDown':
-          g.setSpeed(g.speed - 1);
-          break;
-        case 'speed1':
-        case 'speed2':
-        case 'speed3':
-        case 'speed4':
-        case 'speed5':
-          g.setSpeed(Number(action.slice(-1)));
+        case 'endTurn':
+          // Basılı tutmak turları art arda geçirmesin: her basış tek tur
+          if (!e.repeat) g.step();
           break;
         case 'cycleMapMode': {
           const i = MAP_MODES.indexOf(u.mapMode);

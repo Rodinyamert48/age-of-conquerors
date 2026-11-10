@@ -11,15 +11,7 @@ export type AutosaveFrequency = 'off' | 'monthly' | 'quarterly' | 'yearly';
 export type MapQuality = 'low' | 'medium' | 'high';
 
 export type KeyAction =
-  | 'togglePause'
-  | 'step'
-  | 'speedUp'
-  | 'speedDown'
-  | 'speed1'
-  | 'speed2'
-  | 'speed3'
-  | 'speed4'
-  | 'speed5'
+  | 'endTurn'
   | 'tabCountry'
   | 'tabArmies'
   | 'tabDiplomacy'
@@ -33,15 +25,7 @@ export type KeyAction =
   | 'centerCapital';
 
 export const DEFAULT_KEYS: Record<KeyAction, string> = {
-  togglePause: 'Space',
-  step: 'KeyN',
-  speedUp: 'Equal',
-  speedDown: 'Minus',
-  speed1: 'Digit1',
-  speed2: 'Digit2',
-  speed3: 'Digit3',
-  speed4: 'Digit4',
-  speed5: 'Digit5',
+  endTurn: 'Space',
   tabCountry: 'KeyC',
   tabArmies: 'KeyA',
   tabDiplomacy: 'KeyD',
@@ -86,7 +70,7 @@ const DEFAULTS: Omit<SettingsState, 'set' | 'reset' | 'setKey'> = {
   mapQuality: 'high',
   defaultDifficulty: 'normal',
   defaultSpeed: 2,
-  defaultTimeStep: 'day',
+  defaultTimeStep: 'week',
   autosave: 'monthly',
   notifications: {
     war: true,
@@ -118,15 +102,21 @@ export const useSettings = create<SettingsState>()(
     }),
     {
       name: 'aoc-settings',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      // v2: tur tabanlı sistem; varsayılan tur uzunluğu bir hafta
+      migrate: (persisted, version) => {
+        const p = (persisted ?? {}) as Partial<SettingsState>;
+        if (version < 2) p.defaultTimeStep = 'week';
+        return p as SettingsState;
+      },
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<SettingsState>;
         return {
           ...current,
           ...p,
           notifications: { ...DEFAULTS.notifications, ...(p.notifications ?? {}) },
-          keys: { ...DEFAULT_KEYS, ...(p.keys ?? {}) },
+          keys: Object.fromEntries(Object.entries({ ...DEFAULT_KEYS, ...(p.keys ?? {}) }).filter(([k]) => k in DEFAULT_KEYS)) as Record<KeyAction, string>,
         };
       },
     },

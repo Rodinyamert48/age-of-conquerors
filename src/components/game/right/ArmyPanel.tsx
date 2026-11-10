@@ -7,7 +7,7 @@ import { useT, useLang } from '@/i18n';
 import { Bar, Button, Collapsible, Flag, SectionTitle, Stat, useConfirm } from '@/components/ui';
 import { useCommand, useReadCtx, useCountryName } from '../hooks';
 import { armySize } from '@/game/query';
-import { armyBaseSpeed, pathDays } from '@/game/movement';
+import { armyBaseSpeed, pathTurns } from '@/game/movement';
 import { unitUpkeep } from '@/game/economy';
 import { UNIT_ORDER } from '@/game/defs/units';
 import type { ArmyUnits, UnitType } from '@/game/types';
@@ -40,7 +40,7 @@ export default function ArmyPanel() {
 
   let status: string = t('army.idle');
   if (a.battle) status = t('army.inBattle');
-  else if (a.path.length) status = t('army.moving', { target: place(a.path[a.path.length - 1]), days: Math.ceil(pathDays(ctx, a)) });
+  else if (a.path.length) status = t('army.moving', { target: place(a.path[a.path.length - 1]), days: pathTurns(ctx, a) });
   else if (siege && siege.by === a.owner) status = t('army.sieging', { progress: Math.round(siege.progress * 100) });
   else if (a.location >= ctx.w.P) status = t('army.atSea');
 

@@ -9,7 +9,7 @@ import { useCommand, useReadCtx } from '../hooks';
 import { armiesOf } from '@/game/ctx';
 import { armySize } from '@/game/query';
 import { formatInt } from '@/lib/format';
-import { pathDays } from '@/game/movement';
+import { pathTurns } from '@/game/movement';
 import type { Army } from '@/game/types';
 
 export default function ArmiesTab() {
@@ -32,7 +32,7 @@ export default function ArmiesTab() {
     if (a.battle) return <span className="text-danger">{t('army.inBattle')}</span>;
     if (a.path.length) {
       const target = a.path[a.path.length - 1];
-      return <span className="text-gold-soft">{t('army.moving', { target: place(target), days: Math.ceil(pathDays(ctx, a)) })}</span>;
+      return <span className="text-gold-soft">{t('army.moving', { target: place(target), days: pathTurns(ctx, a) })}</span>;
     }
     if (a.location < ctx.w.P) {
       const sg = state.provinces[a.location].siege;

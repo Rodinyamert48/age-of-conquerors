@@ -89,6 +89,28 @@ export function siegeTick(ctx: Ctx, dt: number): void {
   }
 }
 
+/**
+ * Anında ele geçirme (Age of History 2 düzeni): savaş halindeki bir düşmanın kontrolündeki bölgede,
+ * savunan kara ordusu kalmamış bir kara ordusu varsa bölge o turda ele geçirilir. Kuşatma beklenmez;
+ * tahkimatlar savunan ordulara muharebede avantaj sağlar.
+ */
+export function occupyTick(ctx: Ctx): void {
+  const { s, w } = ctx;
+  const nodes = new Set<number>();
+  for (const a of Object.values(s.armies)) if (!a.isNavy && !a.battle && a.location < w.P) nodes.add(a.location);
+  for (const p of [...nodes].sort((a, b) => a - b)) {
+    const ps = s.provinces[p];
+    const here = armiesAt(ctx, p).filter((a) => !a.isNavy && !a.battle);
+    const attackers = here.filter((a) => a.owner !== ps.controller && atWar(ctx, a.owner, ps.controller));
+    if (!attackers.length) continue;
+    if (here.some((a) => attackers.some((b) => hostileArmies(ctx, a, b)))) continue;
+    let lead = attackers[0];
+    for (const a of attackers) if (armySoldiers(a) > armySoldiers(lead)) lead = a;
+    captureProvince(ctx, p, lead.owner);
+  }
+  for (let p = 0; p < w.P; p++) if (s.provinces[p].siege) s.provinces[p].siege = null;
+}
+
 /** Bölgeyi ele geçir: sahibi kuşatanın tarafındaysa kurtarılır, değilse kuşatanın kontrolüne geçer */
 export function captureProvince(ctx: Ctx, p: number, by: Tag): void {
   const { s, w } = ctx;

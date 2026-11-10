@@ -81,8 +81,14 @@ export function computeColoring(ctx: Ctx, mode: MapMode, viewer: Tag): ProvinceC
     case 'political':
       for (let p = 0; p < P; p++) {
         const ps = s.provinces[p];
-        fill[p] = colorOf(ps.owner);
-        if (ps.controller !== ps.owner) stripe[p] = colorOf(ps.controller);
+        // Age of History 2 gibi: ele geçirilen bölge fatihin renginde, eski sahibi ince çizgilerle
+        if (ps.controller !== ps.owner && ps.controller !== REBEL_TAG) {
+          fill[p] = colorOf(ps.controller);
+          stripe[p] = colorOf(ps.owner);
+        } else {
+          fill[p] = colorOf(ps.owner);
+          if (ps.controller !== ps.owner) stripe[p] = colorOf(ps.controller);
+        }
       }
       break;
     case 'economic': {

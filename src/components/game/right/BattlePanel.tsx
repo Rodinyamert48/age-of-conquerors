@@ -7,7 +7,7 @@ import { useReadCtx, useCountryName } from '../hooks';
 import type { BattleReport, BattleSideSnapshot } from '@/game/types';
 import { UNIT_ORDER } from '@/game/defs/units';
 import { predictBattle, simContextAt, toSim } from '@/game/combat';
-import { pathDays } from '@/game/movement';
+import { pathTurns } from '@/game/movement';
 import { isFriendly } from '@/game/query';
 import { formatInt, formatPercent } from '@/lib/format';
 import type { Ctx } from '@/game/ctx';
@@ -83,7 +83,7 @@ export default function BattlePanel({ id }: { id: string }) {
     if (!ctx || !b) return [];
     return Object.values(ctx.s.armies)
       .filter((a) => a.path.length && a.path[a.path.length - 1] === b.location && !a.battle && (isFriendly(ctx, a.owner, b.attacker.tag) || isFriendly(ctx, a.owner, b.defender.tag)))
-      .map((a) => ({ a, days: Math.ceil(pathDays(ctx, a)) }))
+      .map((a) => ({ a, days: pathTurns(ctx, a) }))
       .sort((x, y) => x.days - y.days)
       .slice(0, 8);
   }, [ctx, b]);

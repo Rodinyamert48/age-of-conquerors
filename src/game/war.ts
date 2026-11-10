@@ -524,6 +524,14 @@ export function applyPeace(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, ter
     if (!findTreaty(ctx, 'truce', a, b)) addTreaty(ctx, { type: 'truce', a, b, start: s.day, end: s.day + Math.round(BAL.truceYears * 365.25) });
     addRelation(s, a, b, 15);
   }
+  // Age of History 2 düzeni: barışta her taraf ele geçirdiği toprakları korur
+  if (separate) {
+    keepConquests(ctx, [loser], war[winnerSide]);
+    keepConquests(ctx, war[winnerSide], [loser]);
+  } else {
+    keepConquests(ctx, war.attackers, war.defenders);
+    keepConquests(ctx, war.defenders, war.attackers);
+  }
   if (separate) {
     war[loserSide] = war[loserSide].filter((x) => x !== loser);
     restoreControl(ctx, [loser], war[winnerSide]);
@@ -544,6 +552,39 @@ export function applyPeace(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, ter
     { winner: bc?.name ?? beneficiary, loser: s.countries[loser]?.name ?? loser, war: war.name, terms: termsDesc },
     { severity: beneficiary === s.player ? 'good' : loser === s.player ? 'bad' : 'info', involves: [beneficiary, loser, ...leaving, ...opposing], global: true, focus: { war: war.id } },
   );
+  checkEliminations(ctx);
+}
+
+/** owners tarafının bölgelerinden occupiers tarafınca ele geçirilenleri ele geçirene devret */
+function keepConquests(ctx: Ctx, owners: Tag[], occupiers: Tag[]): void {
+  const s = ctx.s;
+  const occ = new Set(occupiers.filter((t) => t !== REBEL_TAG));
+  for (const tag of owners) {
+    if (tag === REBEL_TAG) continue;
+    for (const p of [...provincesOf(ctx, tag)]) {
+      const ctrl = s.provinces[p].controller;
+      if (ctrl !== tag && occ.has(ctrl)) transferProvince(ctx, p, ctrl);
+    }
+  }
+}
+
+/**
+ * Teslim: savaştaki bir ülkenin bütün bölgeleri düşman kontrolündeyse ve kara ordusu kalmadıysa
+ * bölgeleri ele geçirenlere geçer ve ülke haritadan silinir (Age of History 2 gibi).
+ */
+export function capitulationCheck(ctx: Ctx): void {
+  const s = ctx.s;
+  for (const c of Object.values(s.countries)) {
+    if (!c.alive || c.rebelMovement || c.tag === REBEL_TAG) continue;
+    const provs = provincesOf(ctx, c.tag);
+    if (!provs.length) continue;
+    if (provs.some((p) => s.provinces[p].controller === c.tag || s.provinces[p].controller === REBEL_TAG)) continue;
+    if (armiesOf(ctx, c.tag).some((a) => !a.isNavy)) continue;
+    for (const p of [...provs]) {
+      const ctrl = s.provinces[p].controller;
+      if (s.countries[ctrl]?.alive) transferProvince(ctx, p, ctrl);
+    }
+  }
   checkEliminations(ctx);
 }
 

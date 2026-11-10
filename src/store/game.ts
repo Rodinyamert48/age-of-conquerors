@@ -29,6 +29,8 @@ interface GameStore {
   state: GameState | null;
   upcoming: Upcoming[];
   playing: boolean;
+  /** tur hesaplanıyor */
+  busy: boolean;
   speed: number;
   turnMs: number;
   error: string | null;
@@ -98,6 +100,7 @@ export const useGame = create<GameStore>()((set, get) => ({
   state: null,
   upcoming: [],
   playing: false,
+  busy: false,
   speed: 2,
   turnMs: 0,
   error: null,
@@ -174,7 +177,10 @@ export const useGame = create<GameStore>()((set, get) => ({
     send({ type: 'speed', speed: sp });
   },
   step: () => {
-    if (!get().playing) send({ type: 'step' });
+    // Tur hesaplanırken yeni tur istenmez (tek basış = tek tur)
+    if (get().playing || get().busy || !get().state) return;
+    set({ busy: true });
+    send({ type: 'step' });
   },
   save: async (kind, name) => {
     if (!get().state) return;
@@ -199,7 +205,7 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
   switch (msg.type) {
     case 'state': {
       const prev = store.state;
-      useGame.setState({ state: msg.state, upcoming: msg.upcoming, playing: msg.playing, turnMs: msg.turnMs });
+      useGame.setState({ state: msg.state, upcoming: msg.upcoming, playing: msg.playing, turnMs: msg.turnMs, ...(msg.reason === 'turn' || msg.reason === 'new' || msg.reason === 'load' ? { busy: false } : {}) });
       if (pendingState && (msg.reason === 'new' || msg.reason === 'load')) {
         pendingState.resolve();
         pendingState = null;
@@ -247,7 +253,7 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
         pendingState.reject(new Error(msg.message));
         pendingState = null;
       }
-      useGame.setState({ error: msg.message, playing: false });
+      useGame.setState({ error: msg.message, playing: false, busy: false });
       break;
     default:
       break;

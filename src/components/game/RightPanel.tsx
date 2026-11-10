@@ -19,7 +19,7 @@ export default function RightPanel() {
     ui.openRight(null);
   };
   return (
-    <aside className="anim-in absolute bottom-0 right-0 top-0 z-20 flex w-[min(360px,100vw)] flex-col border-l border-line bg-panel/[0.97] shadow-2xl lg:relative">
+    <aside className="anim-in absolute inset-x-0 bottom-0 z-20 flex max-h-[46%] flex-col rounded-t-lg border-t border-line bg-panel/[0.97] shadow-2xl sm:inset-x-auto sm:right-0 sm:top-0 sm:max-h-none sm:w-[min(360px,100vw)] sm:rounded-none sm:border-l sm:border-t-0 lg:relative">
       <div className="flex justify-end px-2 pt-1.5">
         <button type="button" onClick={close} className="rounded p-1 text-muted hover:bg-white/5 hover:text-ink" aria-label={t('common.close')}>
           <X size={16} />

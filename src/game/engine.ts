@@ -21,8 +21,8 @@ import { maxManpower, populationTick } from './population';
 import { createArmy, constructionTick, researchTick } from './construction';
 import { movementTick, supplyTick } from './movement';
 import { battleTick, detectBattles, engageAt } from './combat';
-import { siegeTick } from './siege';
-import { checkEliminations, treatyTick, warTick } from './war';
+import { occupyTick } from './siege';
+import { capitulationCheck, checkEliminations, treatyTick, warTick } from './war';
 import { relationTick, baselineRelation } from './diplomacy';
 import { stabilityTick, rebellionTick } from './stability';
 import { eventsTick } from './events';
@@ -376,9 +376,11 @@ export function advanceTurn(ctx: Ctx): void {
   // 1. Ordu hareketleri
   movementTick(ctx, dt, { onArrive });
   // 2. Muharebe ve kuşatma
+  // Muharebeler aynı turda sonuçlanır, savunmasız düşman bölgeleri anında ele geçirilir
   detectBattles(ctx);
-  battleTick(ctx, dt);
-  siegeTick(ctx, dt);
+  for (let i = 0; i < 90 && Object.keys(s.battles).length; i++) battleTick(ctx, 1);
+  occupyTick(ctx);
+  capitulationCheck(ctx);
   // 3. Ekonomi
   economyTick(ctx, dt, monthChanged);
   // 4. Nüfus, insan gücü, ikmal ve yıpranma

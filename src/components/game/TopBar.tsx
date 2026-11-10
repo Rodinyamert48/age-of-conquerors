@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Pause, Play, StepForward, ChevronsRight, ChevronsLeft, Menu, Swords, Coins, Users, Scale, Bell, CalendarClock, Flame } from 'lucide-react';
+import { ArrowRight, Loader2, Menu, Swords, Coins, Users, Scale, Bell, CalendarClock, Flame } from 'lucide-react';
 import { useGame } from '@/store/game';
 import { useUI } from '@/store/ui';
 import { useT, useLang } from '@/i18n';
@@ -15,8 +15,7 @@ export default function TopBar() {
   const t = useT();
   const lang = useLang();
   const state = useGame((s) => s.state);
-  const playing = useGame((s) => s.playing);
-  const speed = useGame((s) => s.speed);
+  const busy = useGame((s) => s.busy);
   const upcoming = useGame((s) => s.upcoming);
   const turnMs = useGame((s) => s.turnMs);
   const ctx = useReadCtx();
@@ -32,17 +31,17 @@ export default function TopBar() {
 
   return (
     <header className="relative z-30 flex h-12 shrink-0 items-center gap-1 border-b border-line bg-panel px-2 text-sm shadow-[0_2px_10px_rgba(0,0,0,0.35)]">
-      <button type="button" onClick={() => ui.setLeftTab('country')} className="flex min-w-0 items-center gap-2 rounded px-1.5 py-1 hover:bg-white/5" title={c.name}>
+      <button type="button" onClick={() => ui.setLeftTab('country')} className="flex min-w-0 shrink-0 items-center gap-2 rounded px-1.5 py-1 hover:bg-white/5" title={c.name}>
         <Flag code={c.flag} className="h-6" />
         <span className="hidden max-w-[160px] truncate font-display text-base text-ink lg:inline">{lang === 'en' ? c.nameEn : c.name}</span>
       </button>
-      <div className="mx-1 h-7 w-px bg-line" />
+      <div className="mx-1 hidden h-7 w-px bg-line sm:block" />
       {/* Kaynaklar */}
       <div className="relative" onMouseEnter={() => setTip('budget')} onMouseLeave={() => setTip(null)}>
         <button type="button" onClick={() => ui.setLeftTab('economy')} className="flex items-center gap-1.5 rounded px-1.5 py-1 hover:bg-white/5">
           <Coins size={15} className="text-gold" />
           <span className={`tabular ${c.treasury < 0 ? 'text-danger' : 'text-ink'}`}>{formatMoney(c.treasury, lang)}</span>
-          <span className={`tabular text-xs ${b.balance >= 0 ? 'text-good' : 'text-danger'}`}>{formatSignedMoney(b.balance, lang)}</span>
+          <span className={`hidden tabular text-xs sm:inline ${b.balance >= 0 ? 'text-good' : 'text-danger'}`}>{formatSignedMoney(b.balance, lang)}</span>
         </button>
         {tip === 'budget' && (
           <Tip>
@@ -59,7 +58,7 @@ export default function TopBar() {
           </Tip>
         )}
       </div>
-      <div className="flex items-center gap-1.5 rounded px-1.5 py-1" title={`${t('top.manpower')}: ${formatCompact(c.manpower, lang)} / ${formatCompact(mpMax, lang)}`}>
+      <div className="hidden items-center gap-1.5 rounded px-1.5 py-1 sm:flex" title={`${t('top.manpower')}: ${formatCompact(c.manpower, lang)} / ${formatCompact(mpMax, lang)}`}>
         <Users size={15} className="text-info" />
         <span className="tabular">{formatCompact(c.manpower, lang)}</span>
       </div>
@@ -124,34 +123,21 @@ export default function TopBar() {
           )}
         </div>
         <div className="flex flex-col items-end leading-tight">
-          <span className="font-display text-[15px] tabular text-ink">{formatDate(state.day, lang)}</span>
-          {!playing && <span className="text-[9px] tracking-[0.25em] text-gold/80">{t('top.paused')}</span>}
+          <span className="whitespace-nowrap font-display text-[13px] tabular text-ink sm:text-[15px]">{formatDate(state.day, lang)}</span>
+          <span className="text-[9px] tracking-[0.2em] text-gold/80">{t('top.turn', { n: state.turn + 1 })}</span>
         </div>
-        <div className="ml-1 flex items-center overflow-hidden rounded border border-line-2">
-          <IconBtn title={playing ? t('top.pause') : t('top.play')} onClick={() => useGame.getState().togglePlay()} active={playing}>
-            {playing ? <Pause size={15} /> : <Play size={15} />}
-          </IconBtn>
-          <IconBtn title={t('top.step')} onClick={() => useGame.getState().step()} disabled={playing}>
-            <StepForward size={15} />
-          </IconBtn>
-          <IconBtn title={t('top.speedDown')} onClick={() => useGame.getState().setSpeed(speed - 1)}>
-            <ChevronsLeft size={15} />
-          </IconBtn>
-          <div className="flex items-center gap-0.5 px-1.5" title={t('top.speed', { n: speed })}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                type="button"
-                key={n}
-                aria-label={t('top.speed', { n })}
-                onClick={() => useGame.getState().setSpeed(n)}
-                className={`h-3 w-1.5 rounded-sm ${n <= speed ? 'bg-gold' : 'bg-line-2'}`}
-              />
-            ))}
-          </div>
-          <IconBtn title={t('top.speedUp')} onClick={() => useGame.getState().setSpeed(speed + 1)}>
-            <ChevronsRight size={15} />
-          </IconBtn>
-        </div>
+        {/* Age of History 2 gibi: her basış tek tur (kısayol: Boşluk) */}
+        <button
+          type="button"
+          onClick={() => useGame.getState().step()}
+          disabled={busy}
+          title={`${t('top.endTurn')} (${t('top.endTurnKey')})`}
+          aria-label={t('top.endTurn')}
+          className="ml-1 flex h-9 items-center gap-1.5 rounded border border-gold-2 bg-gold/90 px-3 font-semibold text-[#1a1408] shadow transition-colors hover:bg-gold disabled:cursor-wait disabled:opacity-70"
+        >
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+          <span className="hidden sm:inline">{t('top.endTurn')}</span>
+        </button>
         <IconBtn title={t('top.menu')} onClick={() => ui.setPauseMenu(true)} bordered>
           <Menu size={16} />
         </IconBtn>

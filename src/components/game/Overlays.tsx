@@ -17,7 +17,7 @@ import { exportSaveFile } from '@/lib/saves';
 import { formatCompact, formatDate, formatMoney } from '@/lib/format';
 import { MAP_MODES, ECON_RAMP, STAB_RAMP, SUPPLY_RAMP, REL_RAMP, DIPLO_COLORS, TERRAIN_COLORS, rgbStr, type RGB } from '@/components/map/modes';
 import type { GameNotification, MapMode, TimeStep } from '@/game/types';
-import { findPath } from '@/game/movement';
+import { findPath, pathTurns } from '@/game/movement';
 import { provinceOutput } from '@/game/economy';
 import { REBEL_TAG } from '@/game/query';
 import { TERRAIN_ORDER } from '@/game/defs/terrain';
@@ -345,7 +345,7 @@ export function HoverTooltip() {
     if (!a || a.owner !== ctx.s.player) return null;
     if (!a.isNavy && node >= ctx.w.P) return null;
     const r = findPath(ctx, a, node);
-    return r ? Math.ceil(r.days) : -1;
+    return r ? pathTurns(ctx, a, r.path) : -1;
   }, [ctx, node, selected]);
   if (!hover || !state || !ctx || hover.army) return null;
   if (hover.province < 0) return null;
@@ -354,7 +354,7 @@ export function HoverTooltip() {
   const ps = state.provinces[p];
   const owner = state.countries[ps.owner];
   return (
-    <div className="pointer-events-none absolute z-30 w-56 rounded border border-line-2 bg-panel-2/95 px-2.5 py-1.5 text-xs shadow-xl" style={{ left: Math.min(hover.x + 16, window.innerWidth - 250), top: hover.y + 14 }}>
+    <div className="pointer-events-none absolute z-30 w-56 rounded border border-line-2 bg-panel-2/95 px-2.5 py-1.5 text-xs shadow-xl [@media(hover:none)]:hidden" style={{ left: Math.min(hover.x + 16, window.innerWidth - 250), top: hover.y + 14 }}>
       <div className="font-display text-sm text-ink">{lang === 'en' ? wp.nameEn : wp.name}</div>
       {owner && (
         <div className="mt-0.5 flex items-center gap-1.5 text-ink-2">
@@ -377,7 +377,7 @@ export function HoverTooltip() {
         <span>{t('tip.unrest')}</span>
         <span className="text-right text-ink-2">{Math.round(ps.unrest)}</span>
       </div>
-      {eta !== null && <div className={`mt-1 ${eta >= 0 ? 'text-gold-soft' : 'text-danger'}`}>{eta >= 0 ? t('tip.eta', { days: eta }) : t('tip.noPath')}</div>}
+      {eta !== null && eta !== 0 && <div className={`mt-1 ${eta >= 0 ? 'text-gold-soft' : 'text-danger'}`}>{eta >= 0 ? t('tip.eta', { days: eta }) : t('tip.noPath')}</div>}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGame } from '@/store/game';
 import { useUI } from '@/store/ui';
@@ -18,7 +18,8 @@ export default function PlayPage() {
   const [status, setStatus] = useState<'checking' | 'loading' | 'failed'>('checking');
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
+  // Arayüz durumu, alt bileşenlerin (ör. başkente odaklanma) etkilerinden önce sıfırlanmalı
+  useLayoutEffect(() => {
     useUI.getState().reset();
   }, []);
 

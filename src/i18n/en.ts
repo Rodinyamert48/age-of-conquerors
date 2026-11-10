@@ -917,19 +917,19 @@ export const en: Record<string, string> = {
     'You lead a nation. Grow your economy, build your army, form alliances and, if you wish, expand your borders through war. You choose the objective on the new game screen; sandbox play has no limits.',
   'help.time.title': 'Time',
   'help.time.body':
-    'The game advances in turns; each turn is one day by default (weekly or monthly can also be chosen). Use the buttons in the top bar to start, pause, advance a single turn and change speed. While paused nothing advances, so you can give orders calmly.',
+    'Like Age of History 2, the game is turn-based: each press of Space or the End Turn button in the top right advances exactly one turn (one week by default) and stops. Give as many orders as you like before ending the turn; the turn length can be set to a day or a month in the game menu.',
   'help.map.title': 'Map',
   'help.map.body':
-    'Zoom with the mouse wheel and drag to pan. Clicking a province opens its details on the right. Use the buttons at the bottom to switch map modes: political, economic, diplomatic, military control, stability, supply and terrain.',
+    'Zoom with the mouse wheel or two fingers and drag to pan. Click or tap a province to open its details. Use the buttons at the bottom to switch map modes; the others are in the "More" list.',
   'help.economy.title': 'Economy',
   'help.economy.body':
     'Income comes from taxes, trade, production and exports. Expenses are army upkeep, policy spending, resource imports and debt interest. Higher taxes increase income but reduce stability. Build agriculture, industry, trade centres, ports, roads, universities, military facilities and forts in your provinces. If the treasury goes negative you are in debt; too much debt leads to bankruptcy.',
   'help.army.title': 'Army',
   'help.army.body':
-    'Select one of your provinces and recruit: it costs money, manpower and time. Click an army to select it, then right-click the destination. Armies move only along neighbouring provinces, strait crossings and sea routes; you need military access to pass through neutral countries. You can merge armies in the same place and split an army in two.',
+    'Select one of your provinces and recruit: it costs money, manpower and time. Click or tap an army to select it, then click or tap the destination (right-click also works on desktop). Armies move one province per turn on land and three sea nodes at sea; you need military access to pass through neutral countries. You can merge armies in the same place and split an army in two.',
   'help.war.title': 'War',
   'help.war.body':
-    'Battle results depend not only on numbers but on unit types, terrain, morale, experience, supply and fortifications. If there is no enemy army in an enemy province, a siege begins; fort levels prolong it while artillery and siege units shorten it. With enough progress you can assault. The war score changes with occupation and battles; in peace talks you spend it on territory, reparations, independence or vassalage.',
+    'Entering a province with an enemy army starts a battle that is resolved within the same turn; the result depends on numbers, unit types, terrain, morale, experience, supply and fortifications. An army entering an undefended enemy province takes it immediately and the province turns your colour. At peace everyone keeps what they hold; you can also spend war score on reparations, independence or vassalage. A country that loses all its land and has no army left disappears.',
   'help.diplomacy.title': 'Diplomacy',
   'help.diplomacy.body':
     'Relations between countries range from −100 to +100. You can sign non-aggression, alliance, defensive, trade and access agreements, claim or cede territory. The AI weighs proposals by its interests; you can see the acceptance assessment before sending. Breaking treaties lowers your reliability.',
@@ -938,7 +938,7 @@ export const en: Record<string, string> = {
     'High taxes, long wars, famine, debt and occupation lower stability. Low stability raises unrest in provinces; highly unrestful provinces may revolt. In core provinces of another nation, independence wars may break out and new states may appear.',
   'help.shortcuts.title': 'Keyboard shortcuts',
   'help.shortcuts.body':
-    'Space: pause/resume · N: one turn · 1-5: speed · +/−: faster/slower · C, A, D, E, R, P, W: tabs · M: map mode · H: go to capital · F5: quick save · Esc: clear selection · Arrow keys: pan the map. Shortcuts can be changed in settings.',
+    'Space: end turn (one turn) · C, A, D, R: tabs · M: map mode · H: go to capital · F5: quick save · Esc: clear selection · Arrow keys: pan the map. Shortcuts can be changed in settings.',
   'credits.title': 'Credits',
   'credits.about':
     'Age of Conquerors is a grand strategy game running entirely in the browser, built with Next.js, React, TypeScript, Tailwind CSS, Zustand and Web Workers. It requires no server, account or paid service.',

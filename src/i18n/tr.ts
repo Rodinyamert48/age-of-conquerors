@@ -999,19 +999,19 @@ export const tr: Record<string, string> = {
     'Bir ülkenin liderisiniz. Ekonominizi büyütün, ordunuzu kurun, ittifaklar oluşturun ve dilerseniz savaşarak sınırlarınızı genişletin. Oyun hedefini yeni oyun ekranında seçersiniz; serbest oyunda sınır yoktur.',
   'help.time.title': 'Zaman',
   'help.time.body':
-    'Oyun turlarla ilerler; her tur varsayılan olarak bir gündür (haftalık ya da aylık da seçilebilir). Üst paneldeki düğmelerle zamanı başlatın, duraklatın, tek tur ilerletin ve hızı ayarlayın. Duraklatılmışken hiçbir sistem ilerlemez; emirlerinizi rahatça verebilirsiniz.',
+    'Oyun Age of History 2 gibi tur tabanlıdır: Boşluk tuşuna ya da sağ üstteki Turu Bitir düğmesine her bastığınızda tam bir tur (varsayılan olarak bir hafta) ilerler ve durur. Tur bitmeden istediğiniz kadar emir verebilirsiniz; tur uzunluğu oyun menüsünden gün ya da ay yapılabilir.',
   'help.map.title': 'Harita',
   'help.map.body':
-    'Fare tekerleğiyle yakınlaşın, sürükleyerek kaydırın. Bir bölgeye tıklayınca sağda ayrıntıları açılır. Alt kısımdaki düğmelerle harita katmanını değiştirin: siyasi, ekonomik, diplomatik, askerî kontrol, istikrar, ikmal ve arazi.',
+    'Fare tekerleğiyle ya da iki parmakla yakınlaşın, sürükleyerek kaydırın. Bir bölgeye tıklayınca/dokununca ayrıntıları açılır. Alttaki düğmelerle harita katmanını değiştirin; diğer katmanlar "Diğer" listesindedir.',
   'help.economy.title': 'Ekonomi',
   'help.economy.body':
     'Gelirleriniz vergi, ticaret, üretim ve ihracattan gelir. Giderler ordu bakımı, politika harcamaları, kaynak ithalatı ve borç faizidir. Vergi oranını yükseltmek geliri artırır ama istikrarı düşürür. Bölgelerinize tarım, sanayi, ticaret, liman, yol, üniversite, askerî tesis ve tahkimat inşa edin. Hazine eksiye düşerse borçlanırsınız; borç çok büyürse iflas edersiniz.',
   'help.army.title': 'Ordu',
   'help.army.body':
-    'Kendi bölgenizi seçip asker toplayın: para, insan gücü ve zaman gerekir. Bir orduya tıklayıp seçin, ardından hedef bölgeye sağ tıklayın. Ordular yalnızca komşu bölgelere, boğaz geçişlerine ve deniz rotalarına göre ilerler; tarafsız ülkelerden geçmek için geçiş izni gerekir. Aynı yerdeki orduları birleştirebilir, bir orduyu ikiye ayırabilirsiniz.',
+    'Kendi bölgenizi seçip asker toplayın: para, insan gücü ve zaman gerekir. Bir orduya tıklayıp/dokunup seçin, ardından hedef bölgeye tıklayın ya da dokunun (masaüstünde sağ tık da olur). Ordular her turda karada bir bölge, denizde üç deniz düğümü ilerler; tarafsız ülkelerden geçmek için geçiş izni gerekir. Aynı yerdeki orduları birleştirebilir, bir orduyu ikiye ayırabilirsiniz.',
   'help.war.title': 'Savaş',
   'help.war.body':
-    'Muharebelerin sonucu asker sayısı kadar birlik türlerine, araziye, morale, tecrübeye, ikmale ve tahkimatlara bağlıdır. Düşman bölgesinde düşman ordusu yoksa kuşatma başlar; tahkimat seviyesi süreyi uzatır, topçu ve kuşatma birlikleri kısaltır. Yeterli ilerlemede hücum edebilirsiniz. Savaş skoru işgal ve muharebelerle değişir; barış görüşmesinde bu skoru toprak, tazminat, bağımsızlık ya da bağlılık için harcarsınız.',
+    'Düşman ordusu olan bir bölgeye girdiğinizde muharebe aynı turda sonuçlanır; sonuç asker sayısı kadar birlik türlerine, araziye, morale, tecrübeye, ikmale ve tahkimatlara bağlıdır. Savunmasız düşman bölgesine giren ordu orayı anında ele geçirir ve bölge sizin renginize boyanır. Barışta herkes ele geçirdiğini korur; savaş skorunu ek olarak tazminat, bağımsızlık ya da bağlılık için harcarsınız. Bütün toprakları alınan ve ordusu kalmayan ülke yok olur.',
   'help.diplomacy.title': 'Diplomasi',
   'help.diplomacy.body':
     'Ülkeler arası ilişkiler −100 ile +100 arasındadır. Saldırmazlık, ittifak, savunma, ticaret ve geçiş anlaşmaları yapabilir; toprak talep edebilir ya da devredebilirsiniz. Yapay zekâ teklifleri çıkarlarına göre değerlendirir; teklif göndermeden önce kabul değerlendirmesini görebilirsiniz. Antlaşmaları bozmak güvenilirliğinizi düşürür.',
@@ -1020,7 +1020,7 @@ export const tr: Record<string, string> = {
     'Yüksek vergiler, uzun savaşlar, kıtlık, borç ve işgal istikrarı düşürür. Düşük istikrar bölgelerde huzursuzluğu artırır; huzursuzluk yüksek bölgelerde isyan çıkabilir. Başka bir ulusun çekirdek bölgelerinde bağımsızlık savaşı başlayabilir ve yeni devletler kurulabilir.',
   'help.shortcuts.title': 'Klavye kısayolları',
   'help.shortcuts.body':
-    'Boşluk: duraklat/devam · N: bir tur · 1-5: hız · +/−: hızlandır/yavaşlat · C, A, D, E, R, P, W: sekmeler · M: harita katmanı · H: başkente git · F5: hızlı kayıt · Esc: seçimi kaldır · Ok tuşları: haritayı kaydır. Kısayollar ayarlardan değiştirilebilir.',
+    'Boşluk: turu bitir (tek tur) · C, A, D, R: sekmeler · M: harita katmanı · H: başkente git · F5: hızlı kayıt · Esc: seçimi kaldır · Ok tuşları: haritayı kaydır. Kısayollar ayarlardan değiştirilebilir.',
 
   // Geliştirici bilgileri
   'credits.title': 'Geliştirici Bilgileri',

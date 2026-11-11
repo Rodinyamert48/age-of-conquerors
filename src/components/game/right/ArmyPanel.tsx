@@ -35,9 +35,12 @@ export default function ArmyPanel() {
   const place = (node: number) => (node < ctx.w.P ? (lang === 'en' ? ctx.w.data.provinces[node].nameEn : ctx.w.data.provinces[node].name) : t('place.seaNode'));
   let upkeep = 0;
   if (mine) for (const u of UNIT_ORDER) upkeep += a.units[u] * unitUpkeep(ctx, me, u);
-  const sameLoc = ids.length > 1 && ids.every((id) => state.armies[id].location === a.location && state.armies[id].isNavy === a.isNavy && state.armies[id].owner === me);
   const siege = a.location < ctx.w.P ? state.provinces[a.location].siege : null;
 
+  // Aynı bölgedeki, savaşta olmayan kendi orduları (aynı türden: kara ya da donanma)
+  const mergeable = Object.values(state.armies)
+    .filter((x) => x.owner === a.owner && x.location === a.location && x.isNavy === a.isNavy && !x.battle)
+    .map((x) => x.id);
   let status: string = t('army.idle');
   if (a.battle) status = t('army.inBattle');
   else if (a.path.length) status = t('army.moving', { target: place(a.path[a.path.length - 1]), days: pathTurns(ctx, a) });
@@ -152,11 +155,15 @@ export default function ArmyPanel() {
             <Button size="sm" disabled={!!a.battle} onClick={() => setSplitOpen(!splitOpen)}>
               <Scissors size={13} /> {t('army.splitCustom')}
             </Button>
-            {ids.length > 1 && (
-              <Button size="sm" disabled={!sameLoc} onClick={() => cmd({ type: 'mergeArmies', armies: ids }).then((r) => r.ok && ui.selectArmies([(r.data as { army: string }).army]))} title={t('army.mergeHint')}>
-                <Combine size={13} /> {t('army.merge')}
-              </Button>
-            )}
+            {/* Aynı bölgedeki kendi ordularını tek orduda birleştir (Age of History 2 gibi) */}
+            <Button
+              size="sm"
+              disabled={!!a.battle || mergeable.length < 2}
+              onClick={() => cmd({ type: 'mergeArmies', armies: mergeable }).then((r) => r.ok && ui.selectArmies([(r.data as { army: string }).army]))}
+              title={t('army.mergeHint')}
+            >
+              <Combine size={13} /> {t('army.mergeHere', { n: mergeable.length })}
+            </Button>
             <Button
               size="sm"
               variant="danger"

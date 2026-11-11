@@ -451,6 +451,7 @@ export const tr: Record<string, string> = {
   'province.yourCore': 'Sizin çekirdek bölgeniz',
 
   // Ordu paneli
+  'army.mergeHere': 'Orduları birleştir ({n})',
   'army.title': 'Ordu',
   'army.actions': 'Ordu emirleri',
   'army.owner': 'Sahibi',
@@ -471,7 +472,7 @@ export const tr: Record<string, string> = {
   'army.atSea': 'Denizde',
   'army.composition': 'Birlik kompozisyonu',
   'army.move': 'Hareket ettir',
-  'army.moveHint': 'Hedefe göndermek için haritada bir bölgeye dokunun ya da tıklayın (sağ tık da olur).',
+  'army.moveHint': 'Sol tık: ordunun olduğu bölgeyi seç · Sağ tık: seçili orduyu oraya gönder (düşman varsa saldırır). Dokunmatikte hedefe dokunun.',
   'army.stop': 'Dur',
   'army.merge': 'Birleştir',
   'army.mergeHint': 'Aynı bölgedeki ordularınızı birleştirir.',

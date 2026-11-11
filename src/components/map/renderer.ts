@@ -461,19 +461,14 @@ export class MapRenderer {
         ctx.stroke(lod.rivers[i]);
       }
     }
-    // Eyalet sınırları: koyu çizgi + ince açık kenar (kabartma etkisi), yakınlaştıkça belirginleşir
-    if (opts.quality !== 'low' && v.scale > 0.12) {
-      const a = Math.min(1, (v.scale - 0.12) * 1.6);
+    // Eyalet sınırları: belirgin siyah çizgi (uzak bakışta yumuşakça belirir)
+    if (opts.quality !== 'low' && v.scale > 0.1) {
+      const a = Math.min(1, (v.scale - 0.1) / 0.15);
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.strokeStyle = `rgba(8,10,14,${0.32 * a})`;
-      ctx.lineWidth = px * 1.1;
+      ctx.strokeStyle = `rgba(0,0,0,${0.78 * a})`;
+      ctx.lineWidth = px * 1.0;
       ctx.stroke(lod.provinceBorders);
-      if (v.scale > 0.35) {
-        ctx.strokeStyle = `rgba(255,248,230,${0.09 * a})`;
-        ctx.lineWidth = px * 0.5;
-        ctx.stroke(lod.provinceBorders);
-      }
     }
     ctx.strokeStyle = 'rgba(10,14,20,0.75)';
     ctx.lineWidth = px * 0.9;

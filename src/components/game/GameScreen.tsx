@@ -79,15 +79,15 @@ export default function GameScreen() {
       if (!st) return;
       const u = useUI.getState();
       const node = c.province >= 0 ? c.province : c.seaNode;
-      // Sağ tık: seçili ordulara hareket emri
+      const own = u.selectedArmies.filter((id) => st.armies[id]?.owner === st.player);
+      // Sağ tık (Age of History 2 gibi): seçili ordular boş bir bölgeye ya da başka orduların
+      // bulunduğu yere (düşmansa saldırı) gider
       if (c.button === 2) {
-        if (u.selectedArmies.length && node >= 0) void issueMove(node);
+        if (own.length && node >= 0) void issueMove(node);
         return;
       }
-      // Age of History 2 gibi: kendi ordun seçiliyken bir bölgeye (ya da denize) dokun → oraya git.
-      // Ordunun bulunduğu bölgeye dokunmak bölge bilgisini açar.
-      const own = u.selectedArmies.filter((id) => st.armies[id]?.owner === st.player);
-      if (own.length && node >= 0 && !c.army && !c.battle && (u.moveMode || node !== st.armies[own[0]].location)) {
+      // "Hareket ettir" modu ya da dokunmatik ekran (sağ tık yok): dokunulan yere git
+      if (own.length && node >= 0 && !c.battle && (u.moveMode || (c.touch && !c.army && node !== st.armies[own[0]].location))) {
         void issueMove(node);
         return;
       }
@@ -101,6 +101,16 @@ export default function GameScreen() {
         return;
       }
       if (c.province >= 0) {
+        // Sol tık, içinde kendi ordun olan bölgeye: oradaki orduları seç (Age of History 2 gibi)
+        const mine = Object.values(st.armies).filter((a) => a.owner === st.player && !a.isNavy && a.location === c.province);
+        if (mine.length && !c.ctrl) {
+          if (c.shift) {
+            for (const a of mine) if (!u.selectedArmies.includes(a.id)) u.toggleArmy(a.id);
+          } else {
+            u.selectArmies(mine.map((a) => a.id));
+          }
+          return;
+        }
         useUI.setState({ selectedArmies: [], moveMode: false });
         u.openRight({ kind: 'province', id: c.province });
         return;

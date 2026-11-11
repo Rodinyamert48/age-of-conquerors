@@ -17,6 +17,8 @@ export interface MapClick {
   button: number;
   shift: boolean;
   ctrl: boolean;
+  /** dokunmatik ekrandan (sağ tık yok) */
+  touch: boolean;
 }
 
 export interface MapHover {
@@ -270,7 +272,7 @@ export default function MapCanvas(props: Props) {
       down = null;
       if (wasDrag) return;
       const p = pick(x, y);
-      latest.current.props.onClick?.({ ...p, button, shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey });
+      latest.current.props.onClick?.({ ...p, button, shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey, touch: e.pointerType === 'touch' || e.pointerType === 'pen' });
     };
     const onLeave = () => {
       if (hoverRef.current !== -1) {

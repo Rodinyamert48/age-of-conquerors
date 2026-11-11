@@ -1,0 +1,44 @@
+name: GitHub Pages
+
+# Testleri çalıştırır, statik siteyi derler ve gh-pages dalına yayınlar.
+# GitHub, gh-pages dalını otomatik olarak Pages kaynağı yapar:
+# https://<kullanıcı>.github.io/<depo>/
+on:
+  push:
+    branches: [main, claude/exciting-ramanujan-d320tk]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Statik derleme
+        env:
+          STATIC_EXPORT: '1'
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+        run: npm run build
+      - name: gh-pages dalına yayınla
+        run: |
+          touch out/.nojekyll
+          cd out
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Yayın: ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages

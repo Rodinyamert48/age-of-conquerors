@@ -7,10 +7,13 @@ import { POLICY_IDS } from './types';
 import { invalidateArmies, warsOf, type Ctx } from './ctx';
 import { canEmbark, findPath, transportCapacity } from './movement';
 import { armySize, atWar, warSide, REBEL_TAG } from './query';
-import { buildingAvailability, cancelConstruction, canResearch, createArmy, mergeInto, startConstruction, startRecruit } from './construction';
+import { availableTechs, buildingAvailability, cancelConstruction, canResearch, createArmy, mergeInto, startConstruction, startRecruit, techCost } from './construction';
+import { TECHS } from './defs/techs';
+import { BUILDING_DEFS } from './defs/buildings';
+import { BUILDING_IDS } from './types';
 import { computeAllBudgets } from './economy';
 import { performAction, answerProposal } from './diplomacy';
-import { applyPeace, callToArms, canDeclareWar, declareWar, evaluatePeace, termsCost, validTerm } from './war';
+import { applyPeace, callToArms, canDeclareWar, declareWar, evaluatePeace, termsCost, transferProvince, validTerm } from './war';
 import { assault } from './siege';
 import { resolvePendingEvent } from './events';
 import { switchPlayer } from './engine';
@@ -40,7 +43,19 @@ export type Command =
   | { type: 'resolveEvent'; uid: string; option: number }
   | { type: 'acknowledgeGameOver' }
   | { type: 'switchCountry'; tag: Tag }
-  | { type: 'setTimeStep'; step: TimeStep };
+  | { type: 'setTimeStep'; step: TimeStep }
+  | { type: 'admin'; op: AdminOp };
+
+/** Yönetici (hile) menüsü işlemleri */
+export type AdminOp =
+  | { kind: 'stat'; tag: Tag; stat: 'treasury' | 'manpower' | 'stability' | 'warExhaustion' | 'reputation'; value: number; add?: boolean }
+  | { kind: 'province'; province: number; what: 'output' | 'pop' | 'buildings' | 'unrest' | 'cores'; factor?: number }
+  | { kind: 'techs'; tag: Tag; mode: 'all' | 'next' | 'none' }
+  | { kind: 'clearArmies'; province: number; owner?: Tag }
+  | { kind: 'spawnArmy'; province: number; owner: Tag; unit: UnitType; amount: number }
+  | { kind: 'setArmyOwner'; army: string; owner: Tag }
+  | { kind: 'setOwner'; province: number; owner: Tag }
+  | { kind: 'research' };
 
 const ok = (data?: unknown): CommandResult => ({ ok: true, data });
 const fail = (error: string, errorParams?: Record<string, string | number>): CommandResult => ({ ok: false, error, errorParams });
@@ -278,6 +293,81 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
     case 'setTimeStep': {
       if (!['day', 'week', 'month'].includes(cmd.step)) return fail('err.invalidTarget');
       s.rules.timeStep = cmd.step;
+      return ok();
+    }
+    case 'admin':
+      return adminOp(ctx, cmd.op);
+  }
+}
+
+function adminOp(ctx: Ctx, op: AdminOp): CommandResult {
+  const { s, w } = ctx;
+  const country = (t: Tag) => s.countries[t];
+  switch (op.kind) {
+    case 'stat': {
+      const c = country(op.tag);
+      if (!c || !Number.isFinite(op.value)) return fail('err.invalidTarget');
+      const cur = c[op.stat];
+      const v = op.add ? cur + op.value : op.value;
+      const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
+      c[op.stat] = op.stat === 'stability' || op.stat === 'warExhaustion' ? clamp(v, 0, 100) : op.stat === 'reputation' ? clamp(v, -100, 100) : op.stat === 'manpower' ? Math.max(0, v) : v;
+      return ok();
+    }
+    case 'province': {
+      const ps = s.provinces[op.province];
+      if (!ps) return fail('err.invalidTarget');
+      const f = op.factor ?? 1.5;
+      if (op.what === 'output') ps.output *= f;
+      else if (op.what === 'pop') ps.pop *= f;
+      else if (op.what === 'unrest') ps.unrest = 0;
+      else if (op.what === 'cores') {
+        if (!ps.cores.includes(ps.owner)) ps.cores.push(ps.owner);
+      } else for (let i = 0; i < BUILDING_IDS.length; i++) ps.buildings[i] = BUILDING_DEFS[BUILDING_IDS[i]].maxLevel;
+      return ok();
+    }
+    case 'techs': {
+      const c = country(op.tag);
+      if (!c) return fail('err.invalidTarget');
+      if (op.mode === 'all') c.techs = TECHS.map((t) => t.id);
+      else if (op.mode === 'none') c.techs = [];
+      else {
+        const next = availableTechs(ctx, op.tag)[0];
+        if (!next) return fail('err.invalidTarget');
+        if (!c.techs.includes(next)) c.techs.push(next);
+        if (c.research.current === next) c.research.current = null;
+      }
+      return ok();
+    }
+    case 'research': {
+      const c = country(s.player);
+      if (c.research.current) c.research.progress = techCost(ctx, c.research.current);
+      return ok();
+    }
+    case 'clearArmies': {
+      for (const a of Object.values(s.armies)) {
+        if (a.location === op.province && (!op.owner || a.owner === op.owner)) delete s.armies[a.id];
+      }
+      invalidateArmies(ctx);
+      return ok();
+    }
+    case 'spawnArmy': {
+      if (!country(op.owner) || op.province < 0 || op.province >= w.N || !(op.amount > 0)) return fail('err.invalidTarget');
+      if (op.unit === 'navy' ? op.province < w.P : op.province >= w.P) return fail('err.invalidTarget');
+      createArmy(ctx, op.owner, op.province, { [op.unit]: Math.round(op.amount) }, { morale: 1 });
+      return ok();
+    }
+    case 'setArmyOwner': {
+      const a = s.armies[op.army];
+      if (!a || !country(op.owner)) return fail('err.invalidTarget');
+      a.owner = op.owner;
+      a.path = [];
+      invalidateArmies(ctx);
+      return ok();
+    }
+    case 'setOwner': {
+      const ps = s.provinces[op.province];
+      if (!ps || !country(op.owner)) return fail('err.invalidTarget');
+      transferProvince(ctx, op.province, op.owner);
       return ok();
     }
   }

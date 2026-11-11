@@ -10,6 +10,7 @@ import TopBar from './TopBar';
 import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 import PeaceDialog from './PeaceDialog';
+import AdminPanel from './AdminPanel';
 import { GameOverDialog, HoverTooltip, MapModeBar, NotificationLog, PauseMenu } from './Overlays';
 import { useCommand, useReadCtx } from './hooks';
 import { findPath } from '@/game/movement';
@@ -157,6 +158,15 @@ export default function GameScreen() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = useSettings.getState();
+      // Yönetici menüsü: klavyedeki " / é tuşu (Backquote)
+      if (e.code === 'Backquote' && !e.repeat) {
+        const tg = e.target as HTMLElement | null;
+        if (!(tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT'))) {
+          e.preventDefault();
+          useUI.getState().setAdminOpen(!useUI.getState().adminOpen);
+          return;
+        }
+      }
       if (!s.keyboardShortcuts) return;
       const tgt = e.target as HTMLElement | null;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.tagName === 'SELECT' || tgt.isContentEditable)) return;
@@ -226,6 +236,7 @@ export default function GameScreen() {
             focus={ui.focus}
           />
           <MapModeBar />
+          <AdminPanel />
           <HoverTooltip />
           {ui.moveMode && (
             <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded border border-gold-2 bg-panel/90 px-3 py-1 text-xs text-gold-soft">{t('army.moveMode')}</div>

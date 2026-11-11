@@ -28,6 +28,7 @@ interface UIStore {
   focus: FocusRequest | null;
   peace: { warId: string; target: Tag } | null;
   pauseMenu: boolean;
+  adminOpen: boolean;
   logOpen: boolean;
   setLeftTab: (t: LeftTab | null) => void;
   toggleLeftTab: (t: LeftTab) => void;
@@ -40,6 +41,7 @@ interface UIStore {
   openPeace: (warId: string, target: Tag) => void;
   closePeace: () => void;
   setPauseMenu: (v: boolean) => void;
+  setAdminOpen: (v: boolean) => void;
   setLogOpen: (v: boolean) => void;
   clearSelection: () => void;
   reset: () => void;
@@ -63,6 +65,7 @@ export const useUI = create<UIStore>()((set, get) => ({
   focus: null,
   peace: null,
   pauseMenu: false,
+  adminOpen: false,
   logOpen: false,
   setLeftTab: (t) => set({ leftTab: t && normalizeTab(t) }),
   toggleLeftTab: (t) => {
@@ -82,6 +85,7 @@ export const useUI = create<UIStore>()((set, get) => ({
   openPeace: (warId, target) => set({ peace: { warId, target } }),
   closePeace: () => set({ peace: null }),
   setPauseMenu: (v) => set({ pauseMenu: v }),
+  setAdminOpen: (v) => set({ adminOpen: v }),
   setLogOpen: (v) => set({ logOpen: v }),
   clearSelection: () => set({ selectedArmies: [], right: null, moveMode: false }),
   reset: () => {

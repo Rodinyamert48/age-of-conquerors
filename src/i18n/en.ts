@@ -862,7 +862,7 @@ export const en: Record<string, string> = {
   'settings.quality.low': 'Low',
   'settings.quality.medium': 'Medium',
   'settings.quality.high': 'High',
-  'settings.qualityHint': 'Low quality hides rivers and province borders to speed up drawing.',
+  'settings.qualityHint': 'Low quality turns off rivers, terrain shading and texture effects for faster drawing (province borders are always shown).',
   'settings.gameplay': 'Gameplay',
   'settings.defaultDifficulty': 'Default AI difficulty',
   'settings.defaultSpeed': 'Default game speed',

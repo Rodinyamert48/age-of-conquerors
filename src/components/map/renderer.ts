@@ -461,8 +461,8 @@ export class MapRenderer {
         ctx.stroke(lod.rivers[i]);
       }
     }
-    // Eyalet sınırları: belirgin siyah çizgi (uzak bakışta yumuşakça belirir)
-    if (opts.quality !== 'low' && v.scale > 0.1) {
+    // Eyalet sınırları: belirgin siyah çizgi (uzak bakışta yumuşakça belirir); her kalitede çizilir
+    if (v.scale > 0.1) {
       const a = Math.min(1, (v.scale - 0.1) / 0.15);
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';

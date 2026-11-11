@@ -940,7 +940,7 @@ export const tr: Record<string, string> = {
   'settings.quality.low': 'Düşük',
   'settings.quality.medium': 'Orta',
   'settings.quality.high': 'Yüksek',
-  'settings.qualityHint': 'Düşük kalite nehirleri ve bölge sınırlarını gizleyerek çizimi hızlandırır.',
+  'settings.qualityHint': 'Düşük kalite nehirleri, arazi gölgelerini ve doku efektlerini kapatarak çizimi hızlandırır (eyalet sınırları her zaman görünür).',
   'settings.gameplay': 'Oynanış',
   'settings.defaultDifficulty': 'Varsayılan yapay zekâ zorluğu',
   'settings.defaultSpeed': 'Varsayılan oyun hızı',

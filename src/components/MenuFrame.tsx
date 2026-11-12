@@ -33,11 +33,11 @@ export function MenuBackdrop() {
       const ox = (w - g.width * k) / 2 - w * 0.08;
       const oy = (h - g.height * k) / 2 + h * 0.05;
       ctx.setTransform(dpr * k, 0, 0, dpr * k, ox * dpr, oy * dpr);
-      ctx.fillStyle = '#0c1524';
+      ctx.fillStyle = '#070b11';
       ctx.fillRect(-g.width, -g.height, g.width * 3, g.height * 3);
       const land = new Path2D();
       for (const p of g.provincePaths) land.addPath(p);
-      ctx.fillStyle = '#18253a';
+      ctx.fillStyle = '#17150f';
       ctx.fill(land, 'evenodd');
       ctx.strokeStyle = 'rgba(210,174,92,0.18)';
       ctx.lineWidth = 1 / k;
@@ -53,7 +53,7 @@ export function MenuBackdrop() {
   return (
     <div className="pointer-events-none fixed inset-0 menu-backdrop">
       <canvas ref={ref} className="h-full w-full opacity-70" />
-      <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/70 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-bg/60 via-bg/80 to-bg" />
     </div>
   );
 }
@@ -61,12 +61,12 @@ export function MenuBackdrop() {
 export function MenuTitle({ small }: { small?: boolean }) {
   const t = useT();
   return (
-    <div className={small ? 'mb-4' : 'mb-10'}>
+    <div className={small ? 'mb-4' : 'mb-8 flex flex-col items-center text-center'}>
       <div className="text-[11px] uppercase tracking-[0.5em] text-gold/80">{t('app.tagline')}</div>
       <h1 className={`font-display ${small ? 'text-3xl' : 'text-5xl md:text-6xl'} mt-1 tracking-[0.06em] text-ink`}>
         AGE <span className="text-gold">of</span> CONQUERORS
       </h1>
-      <div className="mt-3 h-px w-40 bg-gradient-to-r from-gold to-transparent" />
+      <div className={`mt-3 h-px w-40 ${small ? "bg-gradient-to-r from-gold to-transparent" : "bg-gradient-to-r from-transparent via-gold to-transparent"}`} />
     </div>
   );
 }

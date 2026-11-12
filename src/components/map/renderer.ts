@@ -63,7 +63,7 @@ interface CountryLabel {
   angle: number;
 }
 
-const OCEAN_DEEP = '#0e1c2e';
+const OCEAN_DEEP = '#0a121c';
 
 /** Araziye göre hafif kabartma tonu (ülke renginin üzerine) */
 const RELIEF: Partial<Record<Terrain, string>> = {
@@ -409,9 +409,9 @@ export class MapRenderer {
     ctx.setTransform(k, 0, 0, k, -v.x * k, -v.y * k);
     // Okyanus: ortası açık, kutuplara doğru koyulaşan derinlik
     const og = ctx.createLinearGradient(0, 0, 0, this.g.height);
-    og.addColorStop(0, '#0f1f33');
+    og.addColorStop(0, '#0b1623');
     og.addColorStop(0.45, '#16304d');
-    og.addColorStop(1, '#0f1f33');
+    og.addColorStop(1, '#0b1623');
     ctx.fillStyle = og;
     ctx.fillRect(0, 0, this.g.width, this.g.height);
     this.drawGraticule(ctx, v.scale);
@@ -589,7 +589,7 @@ export class MapRenderer {
       const alpha = size > 70 ? Math.max(0, 1 - (size - 70) / 70) : 1;
       if (alpha <= 0.02) continue;
       const fs = Math.min(42, size);
-      ctx.font = `600 ${fs}px Georgia, 'Times New Roman', serif`;
+      ctx.font = `600 ${fs}px 'Playfair Display', Georgia, 'Times New Roman', serif`;
       const [sx, sy] = this.worldToScreen(l.x, l.y);
       const tw = ctx.measureText(l.name).width + fs * 0.2 * l.name.length;
       const rect: [number, number, number, number] = [sx - tw / 2, sy - fs / 2, sx + tw / 2, sy + fs / 2];
@@ -607,7 +607,7 @@ export class MapRenderer {
     }
     // Bölge adları ve şehirler
     if (v.scale >= 0.9) {
-      ctx.font = `500 11px system-ui, sans-serif`;
+      ctx.font = `500 11px 'Libre Baskerville', Georgia, serif`;
       for (let p = 0; p < w.P; p++) {
         const wp = w.data.provinces[p];
         if (!this.visible(wp.x, wp.y, 20)) continue;
@@ -637,7 +637,7 @@ export class MapRenderer {
         const [sx, sy] = this.worldToScreen(x, y);
         drawStar(ctx, sx, sy, v.scale > 1 ? 6 : 4.5);
         if (v.scale >= 1.4 && city) {
-          ctx.font = '600 11px system-ui, sans-serif';
+          ctx.font = '600 11px "Libre Baskerville", Georgia, serif';
           ctx.textAlign = 'left';
           ctx.lineWidth = 3;
           ctx.strokeStyle = 'rgba(10,14,20,0.7)';
@@ -764,7 +764,7 @@ export class MapRenderer {
       const color: RGB = a.owner === REBEL_TAG ? [50, 50, 50] : mute((owner?.color ?? [120, 120, 120]) as RGB);
       const hidden = opts.fog && a.owner !== player && !isFriendly(rctx, player, a.owner);
       const label = hidden ? '?' : a.isNavy ? `${formatCompact(a.units.navy, opts.lang, 0)}⚓` : formatCompact(armySize(a), opts.lang, 0);
-      ctx.font = '700 10px system-ui, sans-serif';
+      ctx.font = '700 10px "Libre Baskerville", Georgia, serif';
       const tw = Math.max(26, ctx.measureText(label).width + 12);
       const h = 15;
       const x = sx - tw / 2;

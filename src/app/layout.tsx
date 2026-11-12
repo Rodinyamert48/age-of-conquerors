@@ -1,4 +1,9 @@
 import type { Metadata, Viewport } from 'next';
+import '@fontsource/playfair-display/400.css';
+import '@fontsource/playfair-display/600.css';
+import '@fontsource/playfair-display/700.css';
+import '@fontsource/libre-baskerville/400.css';
+import '@fontsource/libre-baskerville/700.css';
 import './globals.css';
 import ClientShell from '@/components/ClientShell';
 import { asset } from '@/lib/base';
@@ -12,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0a101b',
+  themeColor: '#060606',
   width: 'device-width',
   initialScale: 1,
   // Mobilde çift dokunma/kıstırma sayfayı değil haritayı yakınlaştırsın

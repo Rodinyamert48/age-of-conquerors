@@ -14,26 +14,26 @@
 }
 
 @theme {
-  --color-bg: #0a101b;
-  --color-bg-2: #0e1624;
-  --color-panel: #111a29;
-  --color-panel-2: #162135;
-  --color-panel-3: #1c2a42;
-  --color-line: #27344b;
-  --color-line-2: #34445f;
-  --color-ink: #ece6d6;
+  --color-bg: #060606;
+  --color-bg-2: #0b0a08;
+  --color-panel: #100e0a;
+  --color-panel-2: #17140e;
+  --color-panel-3: #211d14;
+  --color-line: #30290f;
+  --color-line-2: #4a3f1a;
+  --color-ink: #efe7d2;
   --color-ink-2: #cfc8b6;
-  --color-muted: #8e9aae;
-  --color-faint: #5d6a80;
-  --color-gold: #d2ae5c;
-  --color-gold-2: #a8863d;
-  --color-gold-soft: #e9d49a;
+  --color-muted: #a39a82;
+  --color-faint: #6e664f;
+  --color-gold: #d4af37;
+  --color-gold-2: #a8862a;
+  --color-gold-soft: #ecd68a;
   --color-danger: #d1584c;
   --color-good: #6dbb76;
   --color-info: #6fa6da;
   --color-warn: #e0a94e;
-  --font-display: Georgia, "Times New Roman", "Liberation Serif", serif;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-sans: "Libre Baskerville", Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 

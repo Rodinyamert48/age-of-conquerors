@@ -970,13 +970,13 @@ export const en: Record<string, string> = {
     'Select one of your provinces and recruit: it costs money, manpower and time. Click or tap an army to select it, then click or tap the destination (right-click also works on desktop). Armies move one province per turn on land and three sea nodes at sea; you need military access to pass through neutral countries. You can merge armies in the same place and split an army in two.',
   'help.war.title': 'War',
   'help.war.body':
-    'Entering a province with an enemy army starts a battle that is resolved within the same turn; the result depends on numbers, unit types, terrain, morale, experience, supply and fortifications. An army entering an undefended enemy province takes it immediately and the province turns your colour. At peace everyone keeps what they hold; you can also spend war score on reparations, independence or vassalage. A country that loses all its land and has no army left disappears.',
+    'When you enter a province with enemy troops the battle resolves the same turn; the result depends on troop count, terrain, morale, experience, supply and forts. Use the slider before right-clicking to choose what share of soldiers to send. There is a single unit type: soldiers. To cross the sea, embark from a coastal province with a port. An army entering an undefended province occupies it instantly. In peace talks you can take or give provinces, demand reparations, independence or vassalage, and end the war whenever you want.',
   'help.diplomacy.title': 'Diplomacy',
   'help.diplomacy.body':
     'Relations between countries range from −100 to +100. You can sign non-aggression, alliance, defensive, trade and access agreements, claim or cede territory. The AI weighs proposals by its interests; you can see the acceptance assessment before sending. Breaking treaties lowers your reliability.',
   'help.stability.title': 'Stability and rebellion',
   'help.stability.body':
-    'High taxes, long wars, famine, debt and occupation lower stability. Low stability raises unrest in provinces; highly unrestful provinces may revolt. In core provinces of another nation, independence wars may break out and new states may appear.',
+    'High taxes, long wars, famine, debt and occupation lower stability; low stability brings unrest and rebellion. Conquered provinces are not your cores: they are restless and may rebel; use "Assimilate" in the province panel to make them cores in 5 years. Rarely, protest waves and military coup attempts happen; you can suppress, concede or negotiate. A rebel state created in a civil war stays independent if it wins.',
   'help.shortcuts.title': 'Keyboard shortcuts',
   'help.shortcuts.body':
     'Space: end turn (one turn) · C, A, D, R: tabs · M: map mode · H: go to capital · F5: quick save · Esc: clear selection · Arrow keys: pan the map. Shortcuts can be changed in settings.',
@@ -1035,4 +1035,11 @@ export const en: Record<string, string> = {
   'assimilate.alreadyCore': 'Already a core province',
   'assimilate.occupied': 'Province is occupied',
   'assimilate.inProgress': 'Assimilation in progress',
+  'app.developer': 'Developer',
+  'help.ministers.title': 'Ministers and leaders',
+  'help.ministers.body': 'At the start and every 5 years you appoint seven ministers (interior, foreign, defense, education, chief of staff, health, finance). Each has one bonus and one drawback, shown under Government in the Country tab. The 2020 heads of state are informational.',
+  'help.nuclear.title': 'Nuclear weapons',
+  'help.nuclear.body': 'Once you research nuclear technology, build warheads from the Nuclear card in the left panel. Warheads can be launched at enemy provinces; use costs reputation and invites retaliation. Nuclear powers start with warheads.',
+  'help.online.title': 'Online play',
+  'help.online.body': 'Use "Invite online players" in the game menu: the room owner is the server. Pick a country and create an invite code; your friend enters it via "Join online" in the main menu and sends back an answer code. The turn only advances when every human player presses Space.',
 };

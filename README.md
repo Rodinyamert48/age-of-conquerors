@@ -2,6 +2,10 @@
 
 Tarayıcıda çalışan, tamamen istemci taraflı bir büyük strateji oyunu. Age of History 2'nin sade ülke yönetimi ile Age of History 3'ün daha derin ekonomi, diplomasi ve savaş sistemlerini birleştirmeyi hedefler. Sunucu, hesap ya da ücretli API gerektirmez; oyun durumu tarayıcıdaki IndexedDB'de saklanır.
 
+## 26.1 yenilikleri
+
+Sürüm numarası yıl.güncelleme biçimindedir. 26.1: tek birlik türü, nükleer silahlar, iç savaş ve asi devletler, gönderilecek asker sayısı, öğretici, Age of History 2 tarzı barış müzakeresi, limanlar ve deniz taşıma, bakanlar ve 2020 liderleri, mobil destek, WebRTC ile sunucusuz çevrimiçi mod (oda sahibi sunucudur, tur herkes hazır olunca ilerler), seçimli olaylar, asimilasyon, protesto ve askerî darbe, siyah-altın tema ve 1900'ler yazı tipleri.
+
 ## Hızlı başlangıç
 
 ```bash
@@ -38,7 +42,7 @@ STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/age-of-conquerors npm run build   # çık
 
 - **Tasarım ilkesi:** Age of History 2 kadar sade, Age of History 3 kadar güzel. Dört sekme (Ülke · Ordu ve Savaş · Diplomasi · Araştırma); her panelde önce temel bilgiler ve tek tıklık eylemler (inşa et, piyade topla, ittifak öner…), ayrıntılar katlanır bölümlerde. Araştırma varsayılan olarak otomatiktir.
 - **Harita:** Natural Earth verisinden üretilmiş 2.863 bölge, 4.167 deniz düğümü, boğaz/kanal denetimi, nehirler, göller ve başkentler. Yakınlaştırılabilir Canvas haritası; araziye göre kabartma tonları, kıyılarda sığ su parıltısı, gölgeli sınırlar ve kâğıt dokusu. Siyasi, diplomatik ve ekonomik katmanlar (istikrar, askerî kontrol, ikmal ve arazi "Diğer" listesinde). İşgal edilmiş bölgeler çizgili gösterilir; ordular, rotalar, muharebeler ve kuşatmalar haritada görünür.
-- **Senaryo:** *Modern Dünya — 1 Ocak 2020* tam ve oynanabilir: 199 ülke, NATO ve KGAÖ, AB tek pazarı, gümrük birlikleri ve serbest ticaret anlaşmaları, savunma paktları, çekirdek bölge ve toprak talepleri, yaklaşık ordu büyüklükleri, senaryoya özgü olaylar. 1444, 1815, 1914, 1936, 1939 ve 1945 senaryoları menüde "veri hazırlanıyor" olarak görünür; doğrulanmış veri olmadan uydurma içerikle açılmazlar (bkz. *Yeni senaryo eklemek*).
+- **Senaryo:** *Modern Dünya — 1 Ocak 2020* tam ve oynanabilir: 199 ülke, NATO ve KGAÖ, AB tek pazarı, gümrük birlikleri ve serbest ticaret anlaşmaları, savunma paktları, çekirdek bölge ve toprak talepleri, yaklaşık ordu büyüklükleri, senaryoya özgü olaylar. 26.1 sürümünde yalnızca 2020 senaryosu vardır (bkz. *Yeni senaryo eklemek*).
 - **Tur sistemi (Age of History 2 gibi):** Oyun tur tabanlıdır. **Boşluk** tuşu ya da **Turu Bitir** düğmesi tam bir tur ilerletir ve durur (varsayılan tur uzunluğu 1 hafta; oyun menüsünden gün/ay yapılabilir). Her tur sabit sırayla işlenir: hareket → muharebe → ele geçirme → ekonomi → nüfus/ikmal → diplomatik süreler → inşaat/asker toplama/araştırma → yapay zekâ → olaylar/istikrar/isyanlar → zafer kontrolü → tarih. Simülasyon tohumlu RNG ile deterministiktir.
 - **Toprak ele geçirme (Age of History 2 gibi):** Ordular her turda karada bir bölge, denizde üç deniz düğümü ilerler. Düşman ordusu olan bölgeye girildiğinde muharebe aynı turda sonuçlanır; savunmasız düşman bölgesine giren ordu orayı anında ele geçirir ve bölge fatihin renginde görünür (eski sahibi ince çizgilerle). Barışta herkes ele geçirdiğini korur; bütün toprakları ele geçirilen ve ordusu kalmayan ülke haritadan silinir.
 - **Mobil:** Dokunmatik kontroller (dokun = seç, ordu seçiliyken bir bölgeye dokun = oraya git, iki parmakla yakınlaştır), alt panel olarak açılan bilgi ekranı ve dar ekranlara uyan üst çubuk.

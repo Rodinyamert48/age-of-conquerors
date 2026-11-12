@@ -2,7 +2,7 @@
 import MenuFrame from '@/components/MenuFrame';
 import { useT } from '@/i18n';
 
-const SECTIONS = ['intro', 'time', 'map', 'economy', 'army', 'war', 'diplomacy', 'stability', 'shortcuts'];
+const SECTIONS = ['intro', 'time', 'map', 'economy', 'army', 'war', 'diplomacy', 'stability', 'ministers', 'nuclear', 'online', 'shortcuts'];
 
 export default function HowToPlayPage() {
   const t = useT();

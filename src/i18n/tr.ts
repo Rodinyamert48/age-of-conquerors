@@ -1052,13 +1052,13 @@ export const tr: Record<string, string> = {
     'Kendi bölgenizi seçip asker toplayın: para, insan gücü ve zaman gerekir. Bir orduya tıklayıp/dokunup seçin, ardından hedef bölgeye tıklayın ya da dokunun (masaüstünde sağ tık da olur). Ordular her turda karada bir bölge, denizde üç deniz düğümü ilerler; tarafsız ülkelerden geçmek için geçiş izni gerekir. Aynı yerdeki orduları birleştirebilir, bir orduyu ikiye ayırabilirsiniz.',
   'help.war.title': 'Savaş',
   'help.war.body':
-    'Düşman ordusu olan bir bölgeye girdiğinizde muharebe aynı turda sonuçlanır; sonuç asker sayısı kadar birlik türlerine, araziye, morale, tecrübeye, ikmale ve tahkimatlara bağlıdır. Savunmasız düşman bölgesine giren ordu orayı anında ele geçirir ve bölge sizin renginize boyanır. Barışta herkes ele geçirdiğini korur; savaş skorunu ek olarak tazminat, bağımsızlık ya da bağlılık için harcarsınız. Bütün toprakları alınan ve ordusu kalmayan ülke yok olur.',
+    'Düşman ordusu olan bölgeye girdiğinizde muharebe aynı turda sonuçlanır; sonuç asker sayısı, araziye, morale, tecrübeye, ikmale ve tahkimata bağlıdır. Sağ tıktan önce alttaki kaydırıcıyla göndereceğiniz asker oranını seçebilirsiniz. Tek birlik türü vardır: asker. Denizi aşmak için kıyıdaki limanlı bölgeden gemiyle taşınırsınız. Savunmasız bölgeye giren ordu orayı anında ele geçirir. Barış görüşmesinde bölge alır/verir, tazminat, bağımsızlık ya da bağlılık isteyip savaşı istediğiniz zaman sonlandırırsınız.',
   'help.diplomacy.title': 'Diplomasi',
   'help.diplomacy.body':
     'Ülkeler arası ilişkiler −100 ile +100 arasındadır. Saldırmazlık, ittifak, savunma, ticaret ve geçiş anlaşmaları yapabilir; toprak talep edebilir ya da devredebilirsiniz. Yapay zekâ teklifleri çıkarlarına göre değerlendirir; teklif göndermeden önce kabul değerlendirmesini görebilirsiniz. Antlaşmaları bozmak güvenilirliğinizi düşürür.',
   'help.stability.title': 'İstikrar ve isyan',
   'help.stability.body':
-    'Yüksek vergiler, uzun savaşlar, kıtlık, borç ve işgal istikrarı düşürür. Düşük istikrar bölgelerde huzursuzluğu artırır; huzursuzluk yüksek bölgelerde isyan çıkabilir. Başka bir ulusun çekirdek bölgelerinde bağımsızlık savaşı başlayabilir ve yeni devletler kurulabilir.',
+    'Yüksek vergiler, uzun savaşlar, kıtlık, borç ve işgal istikrarı düşürür; düşük istikrar huzursuzluk ve isyan getirir. Fethedilen bölgeler çekirdeğiniz değildir: huzursuzdurlar ve isyan çıkarabilirler; bölge panelindeki "Asimile et" ile 5 yılda çekirdek yapın. Nadiren protesto dalgaları ve askerî darbe girişimleri olur; bastırma, taviz ya da uzlaşma seçebilirsiniz. İç savaşta kurulan asi devlet kazanırsa bağımsız kalır.',
   'help.shortcuts.title': 'Klavye kısayolları',
   'help.shortcuts.body':
     'Boşluk: turu bitir (tek tur) · C, A, D, R: sekmeler · M: harita katmanı · H: başkente git · F5: hızlı kayıt · Esc: seçimi kaldır · Ok tuşları: haritayı kaydır. Kısayollar ayarlardan değiştirilebilir.',
@@ -1123,4 +1123,11 @@ export const tr: Record<string, string> = {
   'assimilate.alreadyCore': 'Bölge zaten çekirdek',
   'assimilate.occupied': 'Bölge işgal altında',
   'assimilate.inProgress': 'Asimilasyon sürüyor',
+  'app.developer': 'Geliştirici',
+  'help.ministers.title': 'Bakanlar ve liderler',
+  'help.ministers.body': 'Oyun başında ve her 5 yılda bir yedi bakan atarsınız (içişleri, dışişleri, savunma, eğitim, genelkurmay, sağlık, maliye). Her bakanın bir artısı ve bir eksisi vardır; ülke sekmesindeki Hükûmet bölümünde görürsünüz. 2020 gerçek devlet başkanları bilgi amaçlıdır.',
+  'help.nuclear.title': 'Nükleer silah',
+  'help.nuclear.body': 'Nükleer teknoloji araştırıldığında sol paneldeki Nükleer kartından başlık üretilir. Başlıklar düşman bölgelerine fırlatılabilir; kullanım itibarı ve karşılık riski doğurur. Nükleer güçler oyuna başlıkla başlar.',
+  'help.online.title': 'Çevrimiçi oyun',
+  'help.online.body': 'Oyun menüsünden "Çevrimiçi oyuncu davet et" ile oda açan siz sunucusunuz. Ülke seçip davet kodu üretin; arkadaşınız ana menüden "Çevrimiçi katıl" ile kodu girer ve cevap kodunu size verir. Tur, bütün insan oyuncular Boşluk tuşuna basmadan ilerlemez.',
 };

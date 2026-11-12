@@ -60,9 +60,9 @@ export default function MainMenu() {
   return (
     <main className="relative h-full overflow-hidden">
       <MenuBackdrop />
-      <div className="relative z-10 flex h-full flex-col justify-center px-6 md:px-16">
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-6">
         <MenuTitle />
-        <nav className="flex w-full max-w-sm flex-col gap-1.5" aria-label="Ana menü">
+        <nav className="flex w-full max-w-sm flex-col gap-1.5 overflow-y-auto" aria-label="Ana menü">
           {(active || latest) && (
             <button
               type="button"
@@ -93,7 +93,8 @@ export default function MainMenu() {
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-4 left-6 text-xs text-faint md:left-16">
+        <div className="absolute bottom-4 left-0 right-0 text-center text-xs text-faint">
+          <div className="font-display tracking-wider text-muted">{t('app.developer')}: rodinyamert</div>
           {t('app.version', { version: GAME_VERSION })} · {t('app.mapSource')}
           {status === 'loading' && <span className="ml-2 text-muted">· {t(loadingText)}</span>}
         </div>

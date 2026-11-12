@@ -83,7 +83,7 @@ describe('hareket ve rota', () => {
     expect(runCommand(ctx, { type: 'moveArmy', army: army.id, target: tiflis }).ok).toBe(true);
   });
 
-  it.skip('deniz aşırı nakliye (Faz 2'de liman tabanlı yeniden yazılacak)', () => {
+  it.skip("deniz aşırı nakliye (Faz 2'de liman tabanlı yeniden yazılacak)", () => {
     const ctx = newModernGame();
     const izmir = provinceByName(ctx.w, 'TUR', 'İzmir');
     // İzlanda: NATO müttefiki, karadan ulaşılamaz

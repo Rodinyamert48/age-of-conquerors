@@ -98,14 +98,6 @@ const ACTIVE_K: Record<string, number> = {
 /** Orduları olmayan devletler */
 const NO_ARMY = new Set(['CRI', 'PAN', 'ISL', 'MCO', 'AND', 'LIE', 'KIR', 'TUV', 'NRU', 'PLW', 'FSM', 'MHL', 'SLB', 'VUT', 'WSM', 'GRD', 'LCA', 'VCT', 'DMA', 'MUS', 'SMR']);
 
-/** Yaklaşık savaş gemisi sayısı (oyun birimi; ana muharebe gemileri + denizaltılar) */
-const SHIPS: Record<string, number> = {
-  USA: 110, CHN: 100, RUS: 60, JPN: 50, IND: 40, KOR: 40, GBR: 30, FRA: 30, TUR: 30, PRK: 20, ITA: 25, TWN: 25, GRC: 20, DEU: 15,
-  ESP: 15, AUS: 15, BRA: 15, IRN: 15, EGY: 15, IDN: 15, CAN: 12, PAK: 12, VNM: 12, SAU: 10, THA: 10, CHL: 10, DZA: 10, ISR: 8,
-  NLD: 8, NOR: 8, SWE: 8, SGP: 8, MYS: 8, ARG: 8, PER: 8, MEX: 8, COL: 8, ZAF: 6, DNK: 6, PRT: 6, ARE: 6, POL: 5, MAR: 4, PHL: 4,
-  UKR: 3, FIN: 4, ROU: 3, BGR: 3, NGA: 3, BGD: 6, MMR: 5, LKA: 4, ECU: 3, VEN: 4, OMN: 3, KWT: 2, QAT: 2, CUB: 2, NZL: 2, IRL: 2,
-};
-
 /** İlişki başlangıç değerleri (oyun değerleri; iyi bilinen ilişkileri yaklaşık yansıtır) */
 const RELATIONS: [Tag, Tag, number][] = [
   ['USA', 'IRN', -80], ['USA', 'PRK', -85], ['KOR', 'PRK', -70], ['JPN', 'PRK', -70], ['IND', 'PAK', -70], ['ISR', 'IRN', -90],
@@ -196,16 +188,6 @@ export function buildModern(world: World): ScenarioSetup {
     for (const a of armies) {
       const b = buildings[a.province];
       b[6] = Math.max(b[6], 1);
-    }
-    // Donanma
-    const ships = SHIPS[tag] ?? 0;
-    if (ships > 0) {
-      const coastal = provs.filter((p) => world.coastal[p]);
-      if (coastal.length) {
-        const port = world.coastal[capital] ? capital : coastal.sort((a, b) => pop[b] - pop[a])[0];
-        buildings[port][3] = Math.max(buildings[port][3], 2);
-        armies.push({ province: port, units: { navy: ships } });
-      }
     }
     const gov = GOV[tag] ?? 'republic';
     let aggression = 0.12 + ((tag.charCodeAt(0) * 7 + tag.charCodeAt(1) * 13 + tag.charCodeAt(2)) % 20) / 100;

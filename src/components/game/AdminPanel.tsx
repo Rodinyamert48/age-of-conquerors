@@ -161,7 +161,7 @@ export default function AdminPanel() {
             </div>
             <div className="flex items-center gap-1">
               <select value={unit} onChange={(e) => setUnit(e.target.value as UnitType)} className={`${field} w-24`} aria-label={x.unit}>
-                {UNIT_ORDER.map((u) => (
+                {UNIT_ORDER.filter((u) => u === 'infantry').map((u) => (
                   <option key={u} value={u}>
                     {u}
                   </option>

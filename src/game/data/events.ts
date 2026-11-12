@@ -3,7 +3,6 @@
  */
 import type { EventDef } from '../events';
 import { MODERN_EVENTS } from './events-modern';
-import { EVENTS_1914 } from './events-1914';
 
 export const GENERIC_EVENTS: EventDef[] = [
   {
@@ -256,7 +255,7 @@ export const GENERIC_EVENTS: EventDef[] = [
 
 let all: EventDef[] | null = null;
 export function getEventDefs(): EventDef[] {
-  if (!all) all = [...GENERIC_EVENTS, ...MODERN_EVENTS, ...EVENTS_1914];
+  if (!all) all = [...GENERIC_EVENTS, ...MODERN_EVENTS];
   return all;
 }
 

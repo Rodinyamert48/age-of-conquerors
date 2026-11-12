@@ -165,7 +165,7 @@ export const tr: Record<string, string> = {
   'terrain.sea': 'Deniz',
 
   // Birlikler
-  'unit.infantry': 'Piyade',
+  'unit.infantry': 'Asker',
   'unit.light': 'Hafif birlikler',
   'unit.cavalry': 'Süvari',
   'unit.artillery': 'Topçu',

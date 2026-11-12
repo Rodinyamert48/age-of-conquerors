@@ -91,6 +91,8 @@ export function cancelConstruction(ctx: Ctx, tag: Tag, p: number): boolean {
 // Asker toplama
 // ---------------------------------------------------------------------------
 export function unitAvailable(ctx: Ctx, tag: Tag, unit: UnitType): boolean {
+  // 26.1: Age of History 2 gibi tek birlik türü vardır (asker)
+  if (unit !== 'infantry') return false;
   const c = ctx.s.countries[tag];
   const def = UNIT_DEFS[unit];
   if (def.requires && !c.techs.includes(def.requires)) return false;
@@ -151,8 +153,12 @@ export function nextArmyName(ctx: Ctx, tag: Tag, navy: boolean): string {
   return fmt(n);
 }
 
-export function createArmy(ctx: Ctx, tag: Tag, location: number, units: Partial<ArmyUnits>, opts: { morale?: number; experience?: number; name?: string } = {}): Army {
-  const isNavy = (units.navy ?? 0) > 0;
+export function createArmy(ctx: Ctx, tag: Tag, location: number, rawUnits: Partial<ArmyUnits>, opts: { morale?: number; experience?: number; name?: string } = {}): Army {
+  // Bütün kara birlikleri tek türde (asker) toplanır; gemiler yoktur
+  let soldiers = 0;
+  for (const [k, v] of Object.entries(rawUnits)) if (k !== 'navy') soldiers += v ?? 0;
+  const units: Partial<ArmyUnits> = { infantry: soldiers };
+  const isNavy = false;
   const a: Army = {
     id: newId(ctx, 'a'),
     owner: tag,

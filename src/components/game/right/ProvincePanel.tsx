@@ -6,10 +6,10 @@ import { useUI } from '@/store/ui';
 import { useT, useLang } from '@/i18n';
 import { Bar, Button, Collapsible, Flag, SectionTitle, Stat, useConfirm, useToasts } from '@/components/ui';
 import { useCommand, useReadCtx, useCountryName } from '../hooks';
-import { BUILDING_IDS, type BuildingId, type UnitType } from '@/game/types';
+import { BUILDING_IDS, type BuildingId } from '@/game/types';
 import { BUILDING_DEFS } from '@/game/defs/buildings';
-import { buildingAvailability, maxRecruitAmount, recruitAvailability, unitAvailable } from '@/game/construction';
-import { UNIT_DEFS, UNIT_ORDER } from '@/game/defs/units';
+import { buildingAvailability, maxRecruitAmount, recruitAvailability } from '@/game/construction';
+import { UNIT_DEFS } from '@/game/defs/units';
 import { TERRAIN_DEFS } from '@/game/defs/terrain';
 import { provinceMonthlyIncome } from '@/game/selectors';
 import { supplyLimit } from '@/game/movement';
@@ -28,8 +28,6 @@ export default function ProvincePanel({ id }: { id: number }) {
   const cmd = useCommand();
   const name = useCountryName();
   const ask = useConfirm((s) => s.ask);
-  const [unit, setUnit] = useState<UnitType>('infantry');
-  const [amount, setAmount] = useState(10000);
   const [cedeTo, setCedeTo] = useState('');
   if (!state || !ctx || id < 0 || id >= ctx.w.P) return null;
   const wp = ctx.w.data.provinces[id];
@@ -142,11 +140,7 @@ export default function ProvincePanel({ id }: { id: number }) {
         </>
       )}
 
-      {mine && controlled && (
-        <Collapsible title={t('simple.otherUnits')}>
-          <Recruit id={id} unit={unit} setUnit={setUnit} amount={amount} setAmount={setAmount} />
-        </Collapsible>
-      )}
+
       <Collapsible title={t('simple.details')}>
       {wp.city && <Stat label={t('province.city')} value={`${lang === 'en' ? wp.city.nameEn : wp.city.name}${wp.city.capital ? ' ★' : ''}`} />}
       <Stat label={t('province.population')} value={formatCompact(ps.pop, lang)} />
@@ -321,70 +315,6 @@ function Buildings({ id }: { id: number }) {
         })}
       </div>
     </>
-  );
-}
-
-function Recruit({ id, unit, setUnit, amount, setAmount }: { id: number; unit: UnitType; setUnit: (u: UnitType) => void; amount: number; setAmount: (n: number) => void }) {
-  const t = useT();
-  const lang = useLang();
-  const state = useGame((s) => s.state)!;
-  const ctx = useReadCtx()!;
-  const cmd = useCommand();
-  const me = state.player;
-  const units = UNIT_ORDER.filter((u) => unitAvailable(ctx, me, u));
-  const cur = units.includes(unit) ? unit : units[0];
-  const def = UNIT_DEFS[cur];
-  const step = def.step;
-  const max = maxRecruitAmount(ctx, id, cur);
-  const amt = Math.max(step, Math.min(max, amount));
-  const av = recruitAvailability(ctx, me, id, cur, amt);
-  return (
-    <div>
-      <div className="grid grid-cols-4 gap-1">
-        {units.map((u) => (
-          <button
-            type="button"
-            key={u}
-            onClick={() => {
-              setUnit(u);
-              setAmount(u === 'navy' ? 1 : 10000);
-            }}
-            title={t(`unit.${u}.desc`)}
-            className={`rounded border px-1 py-1 text-[11px] ${u === cur ? 'border-gold bg-gold/15 text-gold-soft' : 'border-line-2 bg-panel-2 text-ink-2 hover:border-gold-2'}`}
-          >
-            {t(`unit.${u}`)}
-          </button>
-        ))}
-      </div>
-      <p className="mt-1 text-[11px] leading-snug text-muted">{t(`unit.${cur}.desc`)}</p>
-      <div className="mt-1.5 flex items-center gap-1.5">
-        <span className="text-xs text-muted">{t('province.amount')}</span>
-        <button type="button" className="rounded border border-line-2 px-2 text-sm" onClick={() => setAmount(Math.max(step, amt - step * (cur === 'navy' ? 1 : 5)))}>
-          −
-        </button>
-        <input
-          type="number"
-          value={amt}
-          min={step}
-          max={max}
-          step={step}
-          onChange={(e) => setAmount(Math.round((Number(e.target.value) || step) / step) * step)}
-          className="w-24 rounded border border-line-2 bg-bg-2 px-1.5 py-0.5 text-right text-sm tabular"
-        />
-        <button type="button" className="rounded border border-line-2 px-2 text-sm" onClick={() => setAmount(Math.min(max, amt + step * (cur === 'navy' ? 1 : 5)))}>
-          +
-        </button>
-        <span className="text-[11px] text-faint">/ {formatInt(max, lang)}</span>
-      </div>
-      <div className={`mt-1 text-[11px] ${av.ok ? 'text-ink-2' : 'text-danger'}`}>
-        {av.ok || av.reason === 'err.noMoney'
-          ? t('province.recruitInfo', { cost: formatMoney(av.cost, lang), manpower: formatInt(amt * def.manpower, lang), days: av.days })
-          : t(av.reason ?? 'err.unknown', av.reasonParams)}
-      </div>
-      <Button variant="primary" size="sm" className="mt-1.5 w-full" disabled={!av.ok} onClick={() => cmd({ type: 'recruit', province: id, unit: cur, amount: amt })}>
-        {t('province.recruitBtn')}
-      </Button>
-    </div>
   );
 }
 

@@ -17,6 +17,8 @@ concurrency:
 
 jobs:
   deploy:
+    # Dal gönderimleri yalnızca commit mesajında [deploy] varsa yayınlanır (main her zaman)
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[deploy]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

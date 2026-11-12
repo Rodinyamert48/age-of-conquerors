@@ -143,7 +143,7 @@ export const en: Record<string, string> = {
   'terrain.jungle': 'Jungle',
   'terrain.marsh': 'Marsh',
   'terrain.sea': 'Sea',
-  'unit.infantry': 'Infantry',
+  'unit.infantry': 'Soldiers',
   'unit.light': 'Light troops',
   'unit.cavalry': 'Cavalry',
   'unit.artillery': 'Artillery',

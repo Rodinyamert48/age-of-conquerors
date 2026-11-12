@@ -1,4 +1,5 @@
 'use client';
+import { GAME_VERSION } from '@/lib/version';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -92,7 +93,7 @@ export default function MainMenu() {
           ))}
         </nav>
         <div className="absolute bottom-4 left-6 text-xs text-faint md:left-16">
-          {t('app.version', { version: '0.1.0' })} · {t('app.mapSource')}
+          {t('app.version', { version: GAME_VERSION })} · {t('app.mapSource')}
           {status === 'loading' && <span className="ml-2 text-muted">· {t(loadingText)}</span>}
         </div>
       </div>

@@ -123,7 +123,7 @@ function decode(d: number[], scale: number): Float32Array {
   return out;
 }
 
-function addArc(p: Path2D, a: Float32Array, move: boolean) {
+export function addArc(p: Path2D, a: Float32Array, move: boolean) {
   for (let i = 0; i < a.length; i += 2) {
     if (i === 0) {
       if (move) p.moveTo(a[0], a[1]);

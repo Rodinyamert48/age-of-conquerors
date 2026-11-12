@@ -12,7 +12,7 @@
 import type { GameState, Tag, Terrain } from '@/game/types';
 import type { Ctx } from '@/game/ctx';
 import type { World } from '@/game/world';
-import { countryBorders, getLod, lodForScale, outline, type MapGeometry, type MapLod } from './geometry';
+import { addArc, countryBorders, getLod, lodForScale, outline, type MapGeometry, type MapLod } from './geometry';
 import { mute, rgbStr, type ProvinceColoring, type RGB } from './modes';
 import { armySize, atWar, isFriendly, REBEL_TAG } from '@/game/query';
 import { armyBaseSpeed, edgeDays } from '@/game/movement';
@@ -345,7 +345,7 @@ export class MapRenderer {
     const baseKey = `${this.idOf(coloring)}|${s.versions.owners}|${sel.country}|${opts.quality}|${opts.lang}|${opts.relief}|${this.canvas.width}x${this.canvas.height}`;
     const bv = this.baseView;
     const sameView = !!bv && bv.x === v.x && bv.y === v.y && bv.scale === v.scale;
-    const interacting = performance.now() - this.lastViewChange < 160;
+    const interacting = performance.now() - this.lastViewChange < 220;
     this.needsSettle = false;
     if (!bv || this.baseKey !== baseKey || !sameView) {
       if (interacting && bv && this.baseKey === baseKey) {
@@ -388,6 +388,105 @@ export class MapRenderer {
     MapRenderer.lastView = { ...this.view };
   }
 
+  /** Arc / nehir / göl sınır kutuları (görünüm kırpması için bir kez hesaplanır) */
+  private boxes: { arc: Float32Array; river: Float32Array; lake: Float32Array } | null = null;
+  private getBoxes() {
+    if (this.boxes) return this.boxes;
+    const box = (list: Float32Array[]) => {
+      const out = new Float32Array(list.length * 4);
+      list.forEach((a, i) => {
+        let x0 = Infinity;
+        let y0 = Infinity;
+        let x1 = -Infinity;
+        let y1 = -Infinity;
+        for (let k = 0; k < a.length; k += 2) {
+          if (a[k] < x0) x0 = a[k];
+          if (a[k] > x1) x1 = a[k];
+          if (a[k + 1] < y0) y0 = a[k + 1];
+          if (a[k + 1] > y1) y1 = a[k + 1];
+        }
+        out.set([x0, y0, x1, y1], i * 4);
+      });
+      return out;
+    };
+    this.boxes = { arc: box(this.g.arcs), river: box(this.g.riverArcs.map((r) => r.a)), lake: box(this.g.lakeArcs) };
+    return this.boxes;
+  }
+
+  /**
+   * Yakın görünümde yalnızca ekrandaki öğeleri içeren yollar kurulur: dev yolları tüm dünya için
+   * çizmek yakınlaştırmada ve kaydırmada takılma yaratıyordu.
+   */
+  private buildCulledScene(s: GameState, lod: MapLod, coloring: ProvinceColoring, opts: RenderOptions) {
+    const v = this.view;
+    const m = 24 / v.scale;
+    const x0 = v.x - m;
+    const y0 = v.y - m;
+    const x1 = v.x + this.cssW / v.scale + m;
+    const y1 = v.y + this.cssH / v.scale + m;
+    const hit = (b: Float32Array, i: number) => b[i * 4] <= x1 && b[i * 4 + 2] >= x0 && b[i * 4 + 1] <= y1 && b[i * 4 + 3] >= y0;
+    const bx = this.getBoxes();
+    const provinceBorders = new Path2D();
+    const coast = new Path2D();
+    const border = new Path2D();
+    const owner = (p: number) => (s.provinces[p].controller === REBEL_TAG ? s.provinces[p].owner : s.provinces[p].controller);
+    this.g.arcSides.forEach(([l, r], i) => {
+      if (!hit(bx.arc, i)) return;
+      const a = lod.arcs[i];
+      if (r >= 0) {
+        addArc(provinceBorders, a, true);
+        if (owner(l) !== owner(r)) addArc(border, a, true);
+      } else if (l >= 0) addArc(coast, a, true);
+    });
+    const rivers = [new Path2D(), new Path2D(), new Path2D()];
+    if (opts.quality !== 'low') {
+      this.g.riverArcs.forEach((rv, i) => {
+        if (hit(bx.river, i)) addArc(rivers[rv.layer], rv.a, true);
+      });
+    }
+    const lakes = new Path2D();
+    this.g.lakeArcs.forEach((a, i) => {
+      if (!hit(bx.lake, i)) return;
+      addArc(lakes, a, true);
+      lakes.closePath();
+    });
+    const fills = new Map<string, Path2D>();
+    const stripes = new Map<string, { color: RGB; path: Path2D }>();
+    const relief = new Map<Terrain, Path2D>();
+    const bb = this.g.bbox;
+    for (let p = 0; p < this.world.P; p++) {
+      if (bb[p * 4] > x1 || bb[p * 4 + 2] < x0 || bb[p * 4 + 1] > y1 || bb[p * 4 + 3] < y0) continue;
+      const path = lod.provincePaths[p];
+      const k = rgbStr(coloring.fill[p]);
+      let f = fills.get(k);
+      if (!f) fills.set(k, (f = new Path2D()));
+      f.addPath(path);
+      const st = coloring.stripe[p];
+      if (st) {
+        const sk = rgbStr(st);
+        let e = stripes.get(sk);
+        if (!e) stripes.set(sk, (e = { color: st, path: new Path2D() }));
+        e.path.addPath(path);
+      }
+      const tr = this.world.terrain[p];
+      if (RELIEF[tr]) {
+        let rp = relief.get(tr);
+        if (!rp) relief.set(tr, (rp = new Path2D()));
+        rp.addPath(path);
+      }
+    }
+    return {
+      coast,
+      provinceBorders,
+      border,
+      rivers,
+      lakes,
+      fillGroups: [...fills.entries()].map(([color, path]) => ({ color, path })),
+      stripeGroups: [...stripes.values()],
+      relief: [...relief.entries()].map(([tr, path]) => ({ color: RELIEF[tr]!, path })),
+    };
+  }
+
   /** Taban katmanını mevcut görünüm için yeniden çiz (pahalı; seyrek çağrılır) */
   private renderBase(rctx: Ctx, coloring: ProvinceColoring, sel: Selection, opts: RenderOptions) {
     const s = rctx.s;
@@ -400,6 +499,19 @@ export class MapRenderer {
     this.setColoring(coloring, lod);
     this.ensureBorders(s, lod);
     this.ensureLabels(s, opts.lang);
+    const cull = this.cssW / v.scale < this.g.width * 0.85;
+    const sc = cull
+      ? this.buildCulledScene(s, lod, coloring, opts)
+      : {
+          coast: lod.coast,
+          provinceBorders: lod.provinceBorders,
+          border: this.borderPath,
+          rivers: lod.rivers,
+          lakes: lod.lakes,
+          fillGroups: this.fillGroups,
+          stripeGroups: this.stripeGroups,
+          relief: opts.relief && opts.quality !== 'low' ? this.relief(lod) : [],
+        };
     const k = v.scale * dpr;
     const px = 1 / v.scale;
     const fancy = opts.quality !== 'low';
@@ -420,19 +532,19 @@ export class MapRenderer {
       ctx.lineJoin = 'round';
       ctx.strokeStyle = 'rgba(110,170,225,0.07)';
       ctx.lineWidth = px * 12;
-      ctx.stroke(lod.coast);
+      ctx.stroke(sc.coast);
       ctx.strokeStyle = 'rgba(140,195,240,0.10)';
       ctx.lineWidth = px * 5;
-      ctx.stroke(lod.coast);
+      ctx.stroke(sc.coast);
     }
-    for (const fg of this.fillGroups) {
+    for (const fg of sc.fillGroups) {
       ctx.fillStyle = fg.color;
       ctx.fill(fg.path, 'evenodd');
     }
     // İşgal çizgileri (ekranda sabit boyutlu)
-    if (this.stripeGroups.length) {
+    if (sc.stripeGroups.length) {
       const m = new DOMMatrix().scaleSelf(1 / v.scale, 1 / v.scale);
-      for (const sg of this.stripeGroups) {
+      for (const sg of sc.stripeGroups) {
         const pat = this.pattern(ctx, sg.color);
         if (!pat) continue;
         pat.setTransform(m);
@@ -442,13 +554,13 @@ export class MapRenderer {
     }
     // Arazi kabartması
     if (opts.relief && fancy) {
-      for (const r of this.relief(lod)) {
+      for (const r of sc.relief) {
         ctx.fillStyle = r.color;
         ctx.fill(r.path, 'evenodd');
       }
     }
     ctx.fillStyle = '#183554';
-    ctx.fill(lod.lakes, 'evenodd');
+    ctx.fill(sc.lakes, 'evenodd');
     if (opts.quality !== 'low') {
       ctx.strokeStyle = 'rgba(96,150,210,0.55)';
       ctx.lineCap = 'round';
@@ -458,7 +570,7 @@ export class MapRenderer {
         if (i === 1 && v.scale < 0.25) break;
         if (i === 2 && v.scale < 0.6) break;
         ctx.lineWidth = px * (i === 0 ? 1.2 : 0.8);
-        ctx.stroke(lod.rivers[i]);
+        ctx.stroke(sc.rivers[i]);
       }
     }
     // Eyalet sınırları: belirgin siyah çizgi (uzak bakışta yumuşakça belirir); her kalitede çizilir
@@ -468,26 +580,26 @@ export class MapRenderer {
       ctx.lineCap = 'round';
       ctx.strokeStyle = `rgba(0,0,0,${0.78 * a})`;
       ctx.lineWidth = px * 1.0;
-      ctx.stroke(lod.provinceBorders);
+      ctx.stroke(sc.provinceBorders);
     }
     ctx.strokeStyle = 'rgba(10,14,20,0.75)';
     ctx.lineWidth = px * 0.9;
-    ctx.stroke(lod.coast);
-    if (this.borderPath) {
+    ctx.stroke(sc.coast);
+    if (sc.border) {
       if (fancy) {
         ctx.strokeStyle = 'rgba(0,0,0,0.22)';
         ctx.lineWidth = px * 3.4;
-        ctx.stroke(this.borderPath);
+        ctx.stroke(sc.border);
       }
       ctx.lineJoin = 'round';
       ctx.strokeStyle = 'rgba(12,14,18,0.92)';
       ctx.lineWidth = px * 1.6;
-      ctx.stroke(this.borderPath);
+      ctx.stroke(sc.border);
       // İnce altın kenar (AoH3 tarzı)
       if (fancy && v.scale > 0.25) {
         ctx.strokeStyle = 'rgba(232,206,150,0.22)';
         ctx.lineWidth = px * 0.55;
-        ctx.stroke(this.borderPath);
+        ctx.stroke(sc.border);
       }
     }
     if (sel.country) {

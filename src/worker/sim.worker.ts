@@ -6,7 +6,7 @@
 import { buildWorld, type World } from '@/game/world';
 import { advanceTurn, createGame, upcoming } from '@/game/engine';
 import { makeCtx, type Ctx } from '@/game/ctx';
-import { runCommand } from '@/game/commands';
+import { runCommand, runCommandAs, setHumans } from '@/game/commands';
 import { computeAllBudgets } from '@/game/economy';
 import { SPEED_DELAYS, type FromWorker, type ToWorker } from './protocol';
 import { writeSave } from '@/lib/saves';
@@ -91,11 +91,16 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
         break;
       case 'command': {
         if (!ctx) throw new Error('Etkin oyun yok');
-        const result = runCommand(ctx, msg.cmd);
+        const result = msg.as ? runCommandAs(ctx, msg.as, msg.cmd) : runCommand(ctx, msg.cmd);
         post({ type: 'commandResult', id: msg.id, result });
         postState('command');
         break;
       }
+      case 'humans':
+        if (!ctx) return;
+        setHumans(ctx, msg.tags);
+        postState('command');
+        break;
       case 'play':
         if (!ctx || (ctx.s.gameOver && !ctx.s.gameOver.acknowledged)) return;
         if (!playing) {

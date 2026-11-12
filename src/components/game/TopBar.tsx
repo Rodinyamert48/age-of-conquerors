@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ArrowRight, Loader2, Menu, Swords, Coins, Users, Scale, Bell, CalendarClock, Flame } from 'lucide-react';
 import { useGame } from '@/store/game';
 import { useUI } from '@/store/ui';
+import { useOnline } from '@/store/online';
 import { useT, useLang } from '@/i18n';
 import { Flag } from '@/components/ui';
 import { formatCompact, formatDate, formatMoney, formatSignedMoney } from '@/lib/format';
@@ -18,6 +19,7 @@ export default function TopBar() {
   const busy = useGame((s) => s.busy);
   const upcoming = useGame((s) => s.upcoming);
   const turnMs = useGame((s) => s.turnMs);
+  const online = useOnline();
   const ctx = useReadCtx();
   const ui = useUI();
   const [tip, setTip] = useState<'budget' | 'stability' | 'upcoming' | null>(null);
@@ -136,7 +138,7 @@ export default function TopBar() {
           className="ml-1 flex h-9 items-center gap-1.5 rounded border border-gold-2 bg-gold/90 px-3 font-semibold text-[#1a1408] shadow transition-colors hover:bg-gold disabled:cursor-wait disabled:opacity-70"
         >
           {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-          <span className="hidden sm:inline">{t('top.endTurn')}</span>
+          <span className="hidden sm:inline">{online.role !== 'none' && online.ready.includes(state.player) ? `${t('online.ready')} ${online.ready.length}/${Math.max(1, online.humans.length)}` : t('top.endTurn')}</span>
         </button>
         <IconBtn title={t('top.menu')} onClick={() => ui.setPauseMenu(true)} bordered>
           <Menu size={16} />

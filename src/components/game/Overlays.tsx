@@ -13,6 +13,7 @@ import { useT, useLang } from '@/i18n';
 import { Button, Flag, Modal, Segmented, Toggle, useConfirm, useToasts } from '@/components/ui';
 import { useCommand, useReadCtx, useCountryName } from './hooks';
 import { notificationText } from './text';
+import { OnlineHostButton, OnlineHostDialog } from './OnlineDialog';
 import { exportSaveFile } from '@/lib/saves';
 import { formatCompact, formatDate, formatMoney } from '@/lib/format';
 import { MAP_MODES, ECON_RAMP, STAB_RAMP, SUPPLY_RAMP, REL_RAMP, DIPLO_COLORS, TERRAIN_COLORS, rgbStr, type RGB } from '@/components/map/modes';
@@ -35,10 +36,13 @@ export function PauseMenu() {
   const ask = useConfirm((s) => s.ask);
   const push = useToasts((s) => s.push);
   const [saveName, setSaveName] = useState('');
+  const [onlineOpen, setOnlineOpen] = useState(false);
   if (!state) return null;
   const c = state.countries[state.player];
   const defaultName = `${c.name} — ${formatDate(state.day, lang)}`;
   return (
+    <>
+    <OnlineHostDialog open={onlineOpen} onClose={() => setOnlineOpen(false)} />
     <Modal open={open} onClose={() => setOpen(false)} title={t('pause.title')}>
       <div className="flex flex-col gap-2 text-sm">
         <Button variant="primary" onClick={() => setOpen(false)}>
@@ -94,6 +98,20 @@ export function PauseMenu() {
           >
             <SettingsIcon size={14} /> {t('pause.settings')}
           </Button>
+          <Button
+            onClick={() => {
+              setOpen(false);
+              useUI.getState().setAdminOpen(true);
+            }}
+          >
+            {t('admin.open')}
+          </Button>
+          <OnlineHostButton
+            onOpen={() => {
+              setOpen(false);
+              setOnlineOpen(true);
+            }}
+          />
         </div>
         <div className="flex items-center justify-between rounded border border-line bg-panel-2 px-2.5 py-2">
           <span className="text-xs text-muted">{t('pause.timeStep')}</span>
@@ -113,6 +131,7 @@ export function PauseMenu() {
         </Button>
       </div>
     </Modal>
+    </>
   );
 }
 

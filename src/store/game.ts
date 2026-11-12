@@ -49,6 +49,51 @@ interface GameStore {
   clearError: () => void;
 }
 
+/** Çevrimiçi mod bağlantıları (src/store/online.ts tarafından kurulur) */
+export interface NetHooks {
+  role: 'host' | 'guest';
+  /** Konuk: komutu oda sahibine gönderir */
+  command?: (cmd: Command) => Promise<CommandResult>;
+  /** Tur için "hazırım" bildirimi */
+  step: () => void;
+  /** Oda sahibi: yeni durum anlık görüntüsü */
+  onState?: (state: GameState) => void;
+  /** Oyundan çıkılınca bağlantıları kapat */
+  close?: () => void;
+}
+let net: NetHooks | null = null;
+export function setNetHooks(h: NetHooks | null) {
+  net = h;
+}
+
+/** Konuk: oda sahibinden gelen durumu doğrudan göster (kendi ülke etiketiyle) */
+export async function receiveGuestState(state: GameState) {
+  await useGame.getState().init();
+  roCtx = null;
+  useGame.setState({ state, busy: false, playing: false });
+}
+
+/** Oda sahibi: komutu insan oyuncu adına çalıştır */
+export function commandAs(tag: string, cmd: Command): Promise<CommandResult> {
+  return new Promise<CommandResult>((resolve) => {
+    if (!worker) return resolve({ ok: false, error: 'err.noGame' });
+    const id = nextCmdId++;
+    pendingCommands.set(id, resolve);
+    send({ type: 'command', id, cmd, as: tag });
+  });
+}
+
+/** Oda sahibi: simülasyon iş parçacığında bir tur işlet */
+export function stepNow() {
+  if (useGame.getState().busy || !useGame.getState().state) return;
+  useGame.setState({ busy: true });
+  send({ type: 'step' });
+}
+
+export function setHumansInWorker(tags: string[]) {
+  send({ type: 'humans', tags });
+}
+
 let worker: Worker | null = null;
 let readyPromise: Promise<void> | null = null;
 let pendingState: { resolve: () => void; reject: (e: Error) => void } | null = null;
@@ -159,6 +204,10 @@ export const useGame = create<GameStore>()((set, get) => ({
 
   command: (cmd) =>
     new Promise<CommandResult>((resolve) => {
+      if (net?.role === 'guest' && net.command) {
+        net.command(cmd).then(resolve);
+        return;
+      }
       if (!worker) {
         resolve({ ok: false, error: 'err.noGame' });
         return;
@@ -168,7 +217,9 @@ export const useGame = create<GameStore>()((set, get) => ({
       send({ type: 'command', id, cmd });
     }),
 
-  play: () => send({ type: 'play' }),
+  play: () => {
+    if (!net) send({ type: 'play' });
+  },
   pause: () => send({ type: 'pause' }),
   togglePlay: () => (get().playing ? get().pause() : get().play()),
   setSpeed: (speed) => {
@@ -177,6 +228,10 @@ export const useGame = create<GameStore>()((set, get) => ({
     send({ type: 'speed', speed: sp });
   },
   step: () => {
+    if (net) {
+      net.step();
+      return;
+    }
     // Tur hesaplanırken yeni tur istenmez (tek basış = tek tur)
     if (get().playing || get().busy || !get().state) return;
     set({ busy: true });
@@ -188,6 +243,8 @@ export const useGame = create<GameStore>()((set, get) => ({
     set({ lastSaved: Date.now() });
   },
   endGame: () => {
+    net?.close?.();
+    net = null;
     // Ana menüye dönerken son durum oturum kaydına yazılır ("devam et" için)
     writeSession();
     if (sessionTimer) clearTimeout(sessionTimer);
@@ -218,6 +275,7 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
         else if (fresh.some((n) => n.kind === 'battle')) playSound('battle');
         else if (fresh.length) playSound('notify');
       }
+      if (net?.role === 'host') net.onState?.(msg.state);
       scheduleSessionSave();
       // Otomatik kayıt
       if (msg.reason === 'turn') {

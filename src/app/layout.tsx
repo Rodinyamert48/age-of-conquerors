@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: 'Age of Conquerors',
   description: 'Tarayıcıda çalışan büyük strateji oyunu: ekonomi, diplomasi, ordu ve alternatif tarih.',
   icons: { icon: asset('/favicon.svg') },
+  manifest: asset('/manifest.webmanifest'),
+  appleWebApp: { capable: true, title: 'Age of Conquerors', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {

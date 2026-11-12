@@ -12,6 +12,9 @@ import { formatCompact, formatDate, formatInt, formatMoney, formatSignedMoney } 
 import { victoryProgress } from '@/game/victory';
 import { TECHS } from '@/game/defs/techs';
 import EconomyTab from './EconomyTab';
+import { leaderOf } from '@/game/data/leaders';
+import { MINISTER_ROLES, MINISTER_ROLE_NAMES, traitOf } from '@/game/ministers';
+import { modsText } from '../MinisterDialog';
 import PoliciesTab, { PolicyRow } from './PoliciesTab';
 
 /**
@@ -34,6 +37,7 @@ export default function CountryTab() {
   const hist = state.history;
   const maxT = Math.max(1, ...hist.map((h) => Math.abs(h.treasury)));
   const balance = c.budget.balance;
+  const leader = leaderOf(c.tag);
 
   return (
     <div className="text-sm">
@@ -82,6 +86,32 @@ export default function CountryTab() {
       <PolicyRow pid="tax" compact />
       <PolicyRow pid="military" compact />
 
+      <Collapsible title={t('minister.government')} defaultOpen>
+        {leader && (
+          <Stat label={t('minister.leader')} value={`${leader.name} · ${leader.title[lang === 'en' ? 'en' : 'tr']}`} />
+        )}
+        {c.ministers ? (
+          <>
+            {MINISTER_ROLES.map((role) => {
+              const m = c.ministers![role];
+              const tr = m ? traitOf(role, m.trait) : undefined;
+              if (!m || !tr) return null;
+              return (
+                <div key={role} className="mb-1.5 rounded bg-panel-2 px-2 py-1 text-xs">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted">{MINISTER_ROLE_NAMES[role][lang === 'en' ? 'en' : 'tr']}</span>
+                    <span className="text-ink">{m.name}</span>
+                  </div>
+                  <div className="text-gold-soft">{tr.name[lang === 'en' ? 'en' : 'tr']}</div>
+                  <div className="text-good">▲ {modsText(tr.plus, t)}</div>
+                  <div className="text-danger">▼ {modsText(tr.minus, t)}</div>
+                </div>
+              );
+            })}
+            <Stat label={t('minister.nextAppointment')} value={formatDate(c.ministerNext ?? state.day, lang)} />
+          </>
+        ) : null}
+      </Collapsible>
       <Collapsible title={t('tab.economy')}>
         <EconomyTab />
       </Collapsible>

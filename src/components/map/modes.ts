@@ -161,7 +161,22 @@ export function computeColoring(ctx: Ctx, mode: MapMode, viewer: Tag): ProvinceC
       for (let p = 0; p < P; p++) fill[p] = TERRAIN_COLORS[w.terrain[p]];
       break;
   }
+  // Bütün harita renkleri soluk ve koyu tonlara çekilir (parlak renk yok)
+  for (let p = 0; p < P; p++) {
+    fill[p] = mute(fill[p]);
+    const st = stripe[p];
+    if (st) stripe[p] = mute(st);
+  }
   return { fill, stripe };
+}
+
+/** Rengi soluklaştır ve koyulaştır: doygunluğu azalt, parlaklığı düşür */
+export function mute(c: RGB): RGB {
+  const lum = c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
+  const k = 0.52; // doygunluk çarpanı
+  const d = 0.8; // koyulaştırma
+  const f = (v: number) => Math.max(0, Math.min(255, Math.round((lum + (v - lum) * k) * d)));
+  return [f(c[0]), f(c[1]), f(c[2])];
 }
 
 export function rgbStr(c: RGB, a = 1): string {

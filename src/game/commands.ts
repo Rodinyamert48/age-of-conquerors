@@ -4,12 +4,13 @@
  */
 import type { ArmyUnits, BuildingId, CommandResult, DiploActionType, PeaceTerm, PolicyId, Tag, TimeStep, UnitType } from './types';
 import { POLICY_IDS } from './types';
-import { invalidateArmies, warsOf, type Ctx } from './ctx';
-import { canEmbark, findPath, transportCapacity } from './movement';
+import { invalidateAll, invalidateArmies, warsOf, type Ctx } from './ctx';
+import { findPath } from './movement';
 import { armySize, atWar, warSide, REBEL_TAG } from './query';
 import { availableTechs, buildingAvailability, cancelConstruction, canResearch, createArmy, mergeInto, startConstruction, startRecruit, techCost } from './construction';
 import { TECHS } from './defs/techs';
 import { aiNuclear, buildNuke, launchNuke } from './nuclear';
+import { appointMinisters, ministersDue, type MinisterRole } from './ministers';
 import { BUILDING_DEFS } from './defs/buildings';
 import { BUILDING_IDS } from './types';
 import { computeAllBudgets } from './economy';
@@ -46,6 +47,7 @@ export type Command =
   | { type: 'acknowledgeGameOver' }
   | { type: 'switchCountry'; tag: Tag }
   | { type: 'setTimeStep'; step: TimeStep }
+  | { type: 'appointMinisters'; picks: Partial<Record<MinisterRole, number>> }
   | { type: 'buildNuke' }
   | { type: 'launchNuke'; province: number }
   | { type: 'admin'; op: AdminOp };
@@ -68,6 +70,30 @@ export function runCommand(ctx: Ctx, cmd: Command): CommandResult {
   const r = dispatch(ctx, cmd);
   if (r.ok) computeAllBudgets(ctx);
   return r;
+}
+
+/** Çevrimiçi: komutu başka bir insan oyuncu adına çalıştır (oda sahibi sunucudur) */
+export function runCommandAs(ctx: Ctx, tag: Tag, cmd: Command): CommandResult {
+  const s = ctx.s;
+  if (tag === s.player) return runCommand(ctx, cmd);
+  if (!(s.humans ?? []).includes(tag) || !s.countries[tag]?.alive) return fail('err.notFound');
+  if (cmd.type === 'admin' || cmd.type === 'switchCountry') return fail('online.forbidden');
+  const host = s.player;
+  s.player = tag;
+  try {
+    return runCommand(ctx, cmd);
+  } finally {
+    s.player = host;
+  }
+}
+
+/** İnsan oyuncu listesini kur (oda sahibi dahil) */
+export function setHumans(ctx: Ctx, tags: Tag[]): void {
+  const s = ctx.s;
+  for (const old of s.humans ?? []) if (old !== s.player && s.countries[old]) s.countries[old].isPlayer = false;
+  s.humans = Array.from(new Set([s.player, ...tags])).filter((t) => s.countries[t]?.alive);
+  for (const t of s.humans) s.countries[t].isPlayer = true;
+  invalidateAll(ctx);
 }
 
 function ownArmy(ctx: Ctx, id: string) {
@@ -95,9 +121,7 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
       }
       const res = findPath(ctx, a, cmd.target);
       if (!res) {
-        if (!a.isNavy && !canEmbark(ctx, a) && findPath(ctx, a, cmd.target, { ignoreTransport: true })) {
-          return fail('move.noTransport', { capacity: transportCapacity(ctx, a.owner) });
-        }
+        if (!a.isNavy && findPath(ctx, a, cmd.target, { ignorePorts: true })) return fail('move.needsPort');
         return fail('move.noPath');
       }
       // Kısmi gönderim: ordudan seçilen sayıda asker ayrılıp yola çıkar
@@ -315,6 +339,11 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
     case 'setTimeStep': {
       if (!['day', 'week', 'month'].includes(cmd.step)) return fail('err.invalidTarget');
       s.rules.timeStep = cmd.step;
+      return ok();
+    }
+    case 'appointMinisters': {
+      if (!ministersDue(ctx, me)) return fail('minister.notDue');
+      appointMinisters(ctx, me, cmd.picks);
       return ok();
     }
     case 'buildNuke': {

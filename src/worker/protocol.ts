@@ -14,7 +14,8 @@ export type ToWorker =
   | { type: 'init'; world: WorldData }
   | { type: 'new'; options: NewGameOptions }
   | { type: 'load'; state: GameState }
-  | { type: 'command'; id: number; cmd: Command }
+  | { type: 'command'; id: number; cmd: Command; as?: string }
+  | { type: 'humans'; tags: string[] }
   | { type: 'play' }
   | { type: 'pause' }
   | { type: 'speed'; speed: number }

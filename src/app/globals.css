@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Dokunmatik ekranlar: daha büyük dokunma hedefleri */
+@media (pointer: coarse) {
+  button,
+  select,
+  input[type='range'] {
+    min-height: 40px;
+  }
+  input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 @theme {
   --color-bg: #0a101b;
   --color-bg-2: #0e1624;

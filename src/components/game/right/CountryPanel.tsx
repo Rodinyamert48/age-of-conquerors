@@ -15,6 +15,7 @@ import type { DiploActionType, Tag } from '@/game/types';
 import { formatCompact, formatDate, formatInt, formatMoney } from '@/lib/format';
 import { BAL } from '@/game/balance';
 import { warTitle } from '../text';
+import { leaderOf } from '@/game/data/leaders';
 
 /** Sık kullanılan iki taraflı eylemler görünür; diğerleri "Diğer eylemler" altında */
 const PRIMARY: DiploActionType[] = ['alliance', 'nap', 'trade', 'access'];
@@ -138,6 +139,11 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
           {isMe && <span className="mt-0.5 inline-block rounded bg-gold/20 px-1.5 text-[10px] uppercase tracking-wider text-gold">{t('common.you')}</span>}
         </div>
       </div>
+      {leaderOf(tag) && (
+        <div className="mt-1 text-xs text-ink-2">
+          {t('minister.leader')}: {leaderOf(tag)!.name} · {leaderOf(tag)!.title[lang === 'en' ? 'en' : 'tr']}
+        </div>
+      )}
       {!c.alive && <p className="mt-2 text-xs text-muted">{t('country.notAlive')}</p>}
       {c.rebelMovement && <p className="mt-2 text-xs text-warn">{t('country.rebelMovement')}</p>}
       {c.capital >= 0 && (

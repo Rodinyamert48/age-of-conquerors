@@ -2,6 +2,7 @@
  * Oyun bağlamı: dünya + durum + serileştirilmeyen önbellekler.
  * Önbellekler sürüm sayaçlarıyla geçersiz kılınır; durum değiştiren kod ilgili `invalidate*` çağrısını yapar.
  */
+import { ministerKey } from './ministers';
 import type { Alliance, Army, GameState, Modifiers, Tag, Treaty, War } from './types';
 import type { World } from './world';
 import { computeModifiers } from './modifiers';
@@ -203,7 +204,7 @@ export function neighborCountries(ctx: Ctx, tag: Tag): Set<Tag> {
 export function getMods(ctx: Ctx, tag: Tag): Modifiers {
   const c = ctx.s.countries[tag];
   const key = c
-    ? `${c.techs.length}|${Object.values(c.policies).join('')}|${c.government}|${c.tempMods.map((m) => m.id).join(',')}|${c.isPlayer ? 1 : 0}|${ctx.s.rules.difficulty}`
+    ? `${c.techs.length}|${Object.values(c.policies).join('')}|${c.government}|${c.tempMods.map((m) => m.id).join(',')}|${ministerKey(c)}|${c.isPlayer ? 1 : 0}|${ctx.s.rules.difficulty}`
     : 'none';
   if (ctx.cache.modKeys.get(tag) !== key || !ctx.cache.mods.has(tag)) {
     ctx.cache.mods.set(tag, computeModifiers(ctx.s, tag));

@@ -3,11 +3,11 @@ import { newModernGame, provinceByName } from './helpers';
 import { advanceTurn } from '@/game/engine';
 import { runCommand } from '@/game/commands';
 import { createArmy } from '@/game/construction';
-import { findPath, transportCapacity, TRANSPORT_PER_SHIP } from '@/game/movement';
+import { findPath, hasPortAt } from '@/game/movement';
 import { addTreatyIfMissing } from '@/game/diplomacy';
 import { landNeighbors } from '@/game/world';
 import { detectBattles } from '@/game/combat';
-import { armiesOf } from '@/game/ctx';
+import { armiesOf, provincesOf } from '@/game/ctx';
 import type { Ctx } from '@/game/ctx';
 
 function hasEdge(ctx: Ctx, a: number, b: number) {
@@ -83,30 +83,27 @@ describe('hareket ve rota', () => {
     expect(runCommand(ctx, { type: 'moveArmy', army: army.id, target: tiflis }).ok).toBe(true);
   });
 
-  it.skip("deniz aşırı nakliye (Faz 2'de liman tabanlı yeniden yazılacak)", () => {
+  it('denize yalnızca kendi limanından açılınır; liman yoksa rota reddedilir', () => {
     const ctx = newModernGame();
     const izmir = provinceByName(ctx.w, 'TUR', 'İzmir');
-    // İzlanda: NATO müttefiki, karadan ulaşılamaz
     const iceland = ctx.s.provinces.findIndex((ps) => ps.owner === 'ISL');
-    const cap = transportCapacity(ctx, 'TUR');
-    expect(cap).toBeGreaterThan(0);
-    expect(cap % TRANSPORT_PER_SHIP).toBe(0);
-    const small = createArmy(ctx, 'TUR', izmir, { infantry: Math.min(20000, cap) });
-    const big = createArmy(ctx, 'TUR', izmir, { infantry: cap + 10000 });
-    expect(findPath(ctx, small, iceland, { allowSea: false })).toBeNull();
-    const r1 = runCommand(ctx, { type: 'moveArmy', army: small.id, target: iceland });
+    const army = createArmy(ctx, 'TUR', izmir, { infantry: 20000 });
+    // Limansız: ada hedefine gidilemez
+    for (const p of provincesOf(ctx, 'TUR')) ctx.s.provinces[p].buildings[3] = 0;
+    expect(hasPortAt(ctx, 'TUR', izmir)).toBe(false);
+    expect(findPath(ctx, army, iceland)).toBeNull();
+    const r0 = runCommand(ctx, { type: 'moveArmy', army: army.id, target: iceland });
+    expect(r0.ok).toBe(false);
+    expect(r0.error).toBe('move.needsPort');
+    // Limanlı: rota denizden geçer
+    ctx.s.provinces[izmir].buildings[3] = 1;
+    expect(hasPortAt(ctx, 'TUR', izmir)).toBe(true);
+    const r1 = runCommand(ctx, { type: 'moveArmy', army: army.id, target: iceland });
     expect(r1.ok).toBe(true);
-    expect(small.path.some((n) => n >= ctx.w.P)).toBe(true); // rota denizden geçer
-    const r2 = runCommand(ctx, { type: 'moveArmy', army: big.id, target: iceland });
-    expect(r2.ok).toBe(false);
-    expect(r2.error).toBe('move.noTransport');
-    // Donanması olmayan ülke ordusunu denize açamaz
-    expect(transportCapacity(ctx, 'SYR')).toBe(0);
-    const lazkiye = provinceByName(ctx.w, 'SYR', 'Lazkiye');
-    const lefkosa = provinceByName(ctx.w, 'CYP', 'Lefkoşa');
-    addTreatyIfMissing(ctx, 'access', 'CYP', 'SYR', 5);
-    const syr = createArmy(ctx, 'SYR', lazkiye, { infantry: 5000 });
-    expect(findPath(ctx, syr, lefkosa)).toBeNull();
+    expect(army.path.some((n) => n >= ctx.w.P)).toBe(true);
+    // Düşman kontrolündeki liman kullanılamaz
+    ctx.s.provinces[izmir].controller = 'GRC';
+    expect(hasPortAt(ctx, 'TUR', izmir)).toBe(false);
   });
 
   it('düşman ordusuyla aynı bölgede savaş halinde hareket emri verilemez', () => {

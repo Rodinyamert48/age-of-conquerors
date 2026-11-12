@@ -13,7 +13,7 @@ import type { GameState, Tag, Terrain } from '@/game/types';
 import type { Ctx } from '@/game/ctx';
 import type { World } from '@/game/world';
 import { countryBorders, getLod, lodForScale, outline, type MapGeometry, type MapLod } from './geometry';
-import { rgbStr, type ProvinceColoring, type RGB } from './modes';
+import { mute, rgbStr, type ProvinceColoring, type RGB } from './modes';
 import { armySize, atWar, isFriendly, REBEL_TAG } from '@/game/query';
 import { armyBaseSpeed, edgeDays } from '@/game/movement';
 import { formatCompact } from '@/lib/format';
@@ -761,7 +761,7 @@ export class MapRenderer {
       stacks.set(key, n + 1);
       sy -= 12 + n * 17;
       const owner = s.countries[a.owner];
-      const color: RGB = a.owner === REBEL_TAG ? [50, 50, 50] : ((owner?.color ?? [120, 120, 120]) as RGB);
+      const color: RGB = a.owner === REBEL_TAG ? [50, 50, 50] : mute((owner?.color ?? [120, 120, 120]) as RGB);
       const hidden = opts.fog && a.owner !== player && !isFriendly(rctx, player, a.owner);
       const label = hidden ? '?' : a.isNavy ? `${formatCompact(a.units.navy, opts.lang, 0)}⚓` : formatCompact(armySize(a), opts.lang, 0);
       ctx.font = '700 10px system-ui, sans-serif';

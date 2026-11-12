@@ -1,3 +1,4 @@
+import { ministerMods } from './ministers';
 import type { GameState, Modifiers, Tag } from './types';
 import { TECH_BY_ID } from './defs/techs';
 import { GOVERNMENT_DEFS, POLICY_DEFS } from './defs/policies';
@@ -70,6 +71,7 @@ export function computeModifiers(s: GameState, tag: Tag): Modifiers {
     addMods(m, def.mods[lvl] ?? {});
   }
   addMods(m, GOVERNMENT_DEFS[c.government]?.mods ?? {});
+  for (const mm of ministerMods(c)) addMods(m, mm);
   for (const tm of c.tempMods) if (tm.until > s.day) addMods(m, tm.mods);
   if (!c.isPlayer) addMods(m, DIFFICULTY_AI_MODS[s.rules.difficulty] ?? {});
   return m;

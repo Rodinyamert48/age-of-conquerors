@@ -16,6 +16,7 @@ import { getScenario } from './scenarios';
 import { parseDate, stepDays, monthsCrossed, dateFromDay } from './calendar';
 import { POLICY_DEFS } from './defs/policies';
 import { NUCLEAR_TECH, TECHS } from './defs/techs';
+import { ministerTick } from './ministers';
 import { computeAllBudgets, economyTick, emptyBudget, emptyResources, provinceResourceOutput } from './economy';
 import { maxManpower, populationTick } from './population';
 import { createArmy, constructionTick, researchTick } from './construction';
@@ -394,11 +395,14 @@ export function advanceTurn(ctx: Ctx): void {
   s.peaceOffers = s.peaceOffers.filter((p) => p.expires > newDay && s.wars[p.warId]);
   if (monthChanged) relationTick(ctx);
   // 6. İnşaat, asker toplama, araştırma
+  ministerTick(ctx);
   constructionTick(ctx, dt);
   researchTick(ctx, dt);
   // Oyuncunun otomatik araştırması (yapay zekânın seçim mantığıyla)
-  const pc = s.countries[s.player];
-  if (pc?.alive && !pc.research.current && pc.autoResearch !== false) aiResearch(ctx, pc);
+  for (const ht of s.humans ?? [s.player]) {
+    const pc = s.countries[ht];
+    if (pc?.alive && !pc.research.current && pc.autoResearch !== false) aiResearch(ctx, pc);
+  }
   // 7. Yapay zekâ
   aiTick(ctx, newDay);
   // 8. Olaylar, istikrar, isyanlar

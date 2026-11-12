@@ -228,6 +228,10 @@ export interface Country {
   autoResearch?: boolean;
   /** nükleer başlık sayısı */
   nukes?: number;
+  /** bakanlar (yedi bakanlık) ve atama bilgisi */
+  ministers?: Partial<Record<'interior' | 'foreign' | 'defense' | 'education' | 'staff' | 'health' | 'finance', { name: string; trait: string }>>;
+  ministerRound?: number;
+  ministerNext?: Day;
   /** Toprak talepleri (bölge indeksleri) */
   claims: number[];
   resources: ResourceLedger;
@@ -554,6 +558,8 @@ export interface GameState {
   meta: GameMeta;
   rules: GameRules;
   player: Tag;
+  /** Çevrimiçi oyunda insan oyuncuların ülkeleri (oda sahibi dahil) */
+  humans?: Tag[];
   day: Day;
   turn: number;
   rng: number;

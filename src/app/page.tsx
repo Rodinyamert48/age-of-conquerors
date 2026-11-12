@@ -3,7 +3,7 @@ import { GAME_VERSION } from '@/lib/version';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Play, Plus, Map as MapIcon, Save, Settings, BookOpen, Info } from 'lucide-react';
+import { Play, Plus, Map as MapIcon, Save, Settings, BookOpen, Info, Globe } from 'lucide-react';
 import { MenuBackdrop, MenuTitle } from '@/components/MenuFrame';
 import { useT, useLang } from '@/i18n';
 import { listSaves, readSave, type SaveMeta } from '@/lib/saves';
@@ -50,6 +50,7 @@ export default function MainMenu() {
   const items = [
     { href: '/new-game', icon: Plus, label: t('menu.newGame') },
     { href: '/scenarios', icon: MapIcon, label: t('menu.scenarios') },
+    { href: '/online', icon: Globe, label: t('menu.online') },
     { href: '/saves', icon: Save, label: t('menu.saves') },
     { href: '/settings', icon: Settings, label: t('menu.settings') },
     { href: '/how-to-play', icon: BookOpen, label: t('menu.howToPlay') },

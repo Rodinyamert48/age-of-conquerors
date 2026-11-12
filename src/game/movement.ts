@@ -6,7 +6,7 @@ import type { Army, Tag } from './types';
 import { UNIT_DEFS, UNIT_ORDER } from './defs/units';
 import { TERRAIN_DEFS } from './defs/terrain';
 import { EDGE_CROSS, EDGE_EMBARK, EDGE_LAND, EDGE_SEA, type World } from './world';
-import { armiesAt, armiesOf, getMods, invalidateArmies, type Ctx } from './ctx';
+import { armiesAt, getMods, invalidateArmies, type Ctx } from './ctx';
 import { atWar, canEnterProvince, fortLevel, hasAccess, hostileArmies, armySoldiers, isFriendly } from './query';
 import { B_MIL, B_PORT, B_ROAD } from './economy';
 import { BAL, DAYS_PER_MONTH } from './balance';
@@ -15,21 +15,18 @@ import { notify } from './notify';
 /** Deniz nakliyesindeki kara birliklerinin hızı (km/gün) */
 export const TRANSPORT_SPEED = 160;
 const EMBARK_DAYS = 1.5;
-/** Bir savaş gemisinin denizde koruyup taşıyabildiği asker sayısı */
-export const TRANSPORT_PER_SHIP = 4000;
-
-/** Ülkenin deniz nakliye kapasitesi (asker). Donanması olmayan ülke ordusunu denizden taşıyamaz. */
-export function transportCapacity(ctx: Ctx, tag: Tag): number {
-  let ships = 0;
-  for (const a of armiesOf(ctx, tag)) if (a.isNavy) ships += a.units.navy;
-  return ships * TRANSPORT_PER_SHIP;
+/** Bu bölgede (ordunun sahibinin kontrolündeki) bir liman var mı: denize açılma yalnızca limandan yapılır */
+export function hasPortAt(ctx: Ctx, tag: Tag, p: number): boolean {
+  if (p >= ctx.w.P) return false;
+  const ps = ctx.s.provinces[p];
+  return ps.controller === tag && ps.buildings[B_PORT] > 0;
 }
 
-/** Kara ordusu denize açılabilir mi (zaten denizdeyse karaya dönebilmesi için her zaman evet) */
+/** Kara ordusu denize açılabilir mi: bir limandaysa ya da zaten denizdeyse */
 export function canEmbark(ctx: Ctx, a: Army): boolean {
   if (a.isNavy) return true;
   if (a.location >= ctx.w.P) return true;
-  return armySoldiers(a) <= transportCapacity(ctx, a.owner);
+  return hasPortAt(ctx, a.owner, a.location);
 }
 
 export function armyBaseSpeed(ctx: Ctx, a: Army): number {
@@ -95,7 +92,7 @@ export function canStep(ctx: Ctx, a: Army, from: number, to: number): boolean {
   }
   if (to >= w.P) {
     if (kind === EDGE_SEA && straitBlocked(ctx, a.owner, e)) return false;
-    if (from < w.P && !canEmbark(ctx, a)) return false;
+    if (from < w.P && !hasPortAt(ctx, a.owner, from)) return false;
     return true;
   }
   if (kind === EDGE_LAND || kind === EDGE_CROSS || kind === EDGE_EMBARK) return canEnterProvince(ctx, a.owner, to);
@@ -176,7 +173,7 @@ export interface PathOptions {
   /** deniz geçişine izin ver (kara orduları) */
   allowSea?: boolean;
   /** deniz nakliye kapasitesini yok say (yalnızca hata açıklaması için) */
-  ignoreTransport?: boolean;
+  ignorePorts?: boolean;
 }
 
 /**
@@ -189,7 +186,7 @@ export function findPath(ctx: Ctx, a: Army, target: number, opts: PathOptions = 
   if (start === target) return { path: [], days: 0 };
   ensureBuffers(w.N);
   epoch++;
-  const allowSea = opts.allowSea !== false && (opts.ignoreTransport || canEmbark(ctx, a));
+  const allowSea = opts.allowSea !== false;
   const maxDays = opts.maxDays ?? Infinity;
   const speed = armyBaseSpeed(ctx, a);
   const heap = new MinHeap();
@@ -230,6 +227,8 @@ export function findPath(ctx: Ctx, a: Army, target: number, opts: PathOptions = 
       } else {
         if (v >= w.P) {
           if (!allowSea) continue;
+          // Denize açılma yalnızca kendi limanından yapılır
+          if (u < w.P && !opts.ignorePorts && !hasPortAt(ctx, a.owner, u)) continue;
           if (kind === EDGE_SEA && straitBlocked(ctx, a.owner, e)) continue;
         } else if (!canEnter(v)) continue;
       }
@@ -257,7 +256,6 @@ export function findPath(ctx: Ctx, a: Army, target: number, opts: PathOptions = 
 /** Tüm erişilebilir düğümlere süreler (yapay zekâ hedef seçimi için) */
 export function reachable(ctx: Ctx, a: Army, maxDays: number, allowSea = false): Map<number, number> {
   const { w } = ctx;
-  if (allowSea && !canEmbark(ctx, a)) allowSea = false;
   ensureBuffers(w.N);
   epoch++;
   const out = new Map<number, number>();
@@ -285,6 +283,7 @@ export function reachable(ctx: Ctx, a: Army, maxDays: number, allowSea = false):
         if (kind === EDGE_SEA && straitBlocked(ctx, a.owner, e)) continue;
       } else if (v >= w.P) {
         if (!allowSea) continue;
+        if (u < w.P && !hasPortAt(ctx, a.owner, u)) continue;
         if (kind === EDGE_SEA && straitBlocked(ctx, a.owner, e)) continue;
       } else if (!canEnterProvince(ctx, a.owner, v)) continue;
       const nd = d + edgeDays(ctx, a, e, speed);

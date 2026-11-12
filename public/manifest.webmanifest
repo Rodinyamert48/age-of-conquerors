@@ -1,0 +1,11 @@
+{
+  "name": "Age of Conquerors",
+  "short_name": "Conquerors",
+  "description": "Tarayıcıda çalışan büyük strateji oyunu",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0a0908",
+  "theme_color": "#0a0908",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

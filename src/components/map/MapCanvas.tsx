@@ -176,6 +176,12 @@ export default function MapCanvas(props: Props) {
     const pointers = new Map<number, { x: number; y: number }>();
     let down: { x: number; y: number; button: number; moved: boolean; vx: number; vy: number } | null = null;
     let pinchDist = 0;
+    // Dokunmatik ekranda uzun basış = sağ tık (hedef gösterme)
+    let longPress: ReturnType<typeof setTimeout> | null = null;
+    const clearLong = () => {
+      if (longPress) clearTimeout(longPress);
+      longPress = null;
+    };
 
     const local = (e: PointerEvent | WheelEvent | MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -227,6 +233,17 @@ export default function MapCanvas(props: Props) {
       }
       const r = rendererRef.current!;
       down = { x, y, button: e.button, moved: false, vx: r.view.x, vy: r.view.y };
+      clearLong();
+      if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+        longPress = setTimeout(() => {
+          longPress = null;
+          if (!down || down.moved) return;
+          const p = pick(down.x, down.y);
+          down = null;
+          if (navigator.vibrate) navigator.vibrate(15);
+          latest.current.props.onClick?.({ ...p, button: 2, shift: false, ctrl: false, touch: true });
+        }, 500);
+      }
     };
     const onMove = (e: PointerEvent) => {
       const r = rendererRef.current;
@@ -246,7 +263,10 @@ export default function MapCanvas(props: Props) {
       if (down) {
         const dx = x - down.x;
         const dy = y - down.y;
-        if (!down.moved && Math.hypot(dx, dy) > 5) down.moved = true;
+        if (!down.moved && Math.hypot(dx, dy) > 8) {
+          down.moved = true;
+          clearLong();
+        }
         if (down.moved) {
           r.view.x = down.vx - dx / r.view.scale;
           r.view.y = down.vy - dy / r.view.scale;
@@ -263,6 +283,7 @@ export default function MapCanvas(props: Props) {
       latest.current.props.onHover?.({ province: p.province, seaNode: p.seaNode, army: p.army, x, y });
     };
     const onUp = (e: PointerEvent) => {
+      clearLong();
       const [x, y] = local(e);
       pointers.delete(e.pointerId);
       if (pointers.size < 2) pinchDist = 0;

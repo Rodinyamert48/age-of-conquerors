@@ -114,6 +114,17 @@ const RELATIONS: [Tag, Tag, number][] = [
   ['SDN', 'SDS', -30], ['MAR', 'SAU', 40], ['KOR', 'JPN', -10], ['VNM', 'CHN', -20], ['PHL', 'CHN', -15], ['AUS', 'NZL', 70],
 ];
 
+/** Nükleer güçler ve (oyun ölçeğinde) yaklaşık operasyonel başlık sayıları */
+const NUKES: Record<string, number> = { USA: 20, RUS: 20, CHN: 8, FRA: 6, GBR: 5, IND: 4, PAK: 4, ISR: 3, PRK: 2 };
+
+/** Olaylarla (iç savaş) ortaya çıkabilecek isyancı devletler */
+const REBEL_STATES: { tag: Tag; name: string; nameEn: string; color: [number, number, number] }[] = [
+  { tag: 'SDF', name: 'Kuzey ve Doğu Suriye Yönetimi', nameEn: 'North and East Syria Administration', color: [196, 160, 60] },
+  { tag: 'SNG', name: 'Suriye Muhalefet Hükûmeti', nameEn: 'Syrian Opposition Government', color: [120, 160, 100] },
+  { tag: 'RSF', name: 'Hızlı Destek Kuvvetleri Yönetimi', nameEn: 'Rapid Support Forces Administration', color: [170, 110, 70] },
+  { tag: 'LNA', name: 'Doğu Libya Yönetimi', nameEn: 'Eastern Libya Administration', color: [150, 130, 90] },
+];
+
 const NATO = ['USA', 'ALB', 'BEL', 'BGR', 'CAN', 'HRV', 'CZE', 'DNK', 'EST', 'FRA', 'DEU', 'GRC', 'HUN', 'ISL', 'ITA', 'LVA', 'LTU', 'LUX', 'MNE', 'NLD', 'NOR', 'POL', 'PRT', 'ROU', 'SVK', 'SVN', 'ESP', 'TUR', 'GBR'];
 const CSTO = ['RUS', 'ARM', 'BLR', 'KAZ', 'KGZ', 'TJK'];
 const EU28 = ['AUT', 'BEL', 'BGR', 'HRV', 'CYP', 'CZE', 'DNK', 'EST', 'FIN', 'FRA', 'DEU', 'GRC', 'HUN', 'IRL', 'ITA', 'LVA', 'LTU', 'LUX', 'MLT', 'NLD', 'POL', 'PRT', 'ROU', 'SVK', 'SVN', 'ESP', 'SWE', 'GBR'];
@@ -213,6 +224,8 @@ export function buildModern(world: World): ScenarioSetup {
       aggression: Math.max(0.02, aggression),
       focus,
       treasuryMonths: tier === 'high' ? 4 : 3,
+      extraTechs: NUKES[tag] ? ['t_nuclear'] : undefined,
+      nukes: NUKES[tag] ?? 0,
       claims: tag === 'ARG' ? (world.byA3.get('FLK') ?? []) : undefined,
     });
   }
@@ -228,6 +241,11 @@ export function buildModern(world: World): ScenarioSetup {
   for (const p of world.byA3.get('KOS') ?? []) addCore(p, 'SRB');
   for (const p of world.byA3.get('TWN') ?? []) addCore(p, 'CHN');
   for (const p of world.byA3.get('SOL') ?? []) addCore(p, 'SOM');
+
+  // Başlangıçta var olmayan, olaylarla kurulabilecek isyancı devletler
+  for (const r of REBEL_STATES) {
+    countries.push({ tag: r.tag, name: r.name, nameEn: r.nameEn, flag: 'x-unknown', color: r.color, government: 'republic', techYear: 1990, inactive: true, aggression: 0.3 });
+  }
 
   const treaties: ScenarioSetup['treaties'] = [];
   const addPairs = (list: Tag[], type: TreatyType) => {

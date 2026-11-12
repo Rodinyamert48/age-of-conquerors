@@ -11,6 +11,8 @@ export interface ScenarioCountryDef {
   /** bu yıla kadar olan teknolojiler araştırılmış sayılır */
   techYear: number;
   extraTechs?: string[];
+  /** başlangıç nükleer başlık sayısı */
+  nukes?: number;
   /** başlangıç orduları */
   armies?: { province: number; units: Partial<ArmyUnits>; name?: string }[];
   policies?: Partial<Record<PolicyId, number>>;

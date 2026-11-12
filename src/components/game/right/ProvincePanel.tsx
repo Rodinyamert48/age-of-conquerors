@@ -16,6 +16,7 @@ import { supplyLimit } from '@/game/movement';
 import { armiesAt } from '@/game/ctx';
 import { armySize, fortLevel, REBEL_TAG } from '@/game/query';
 import { assaultChance } from '@/game/siege';
+import { canNuke } from '@/game/nuclear';
 import { formatCompact, formatInt, formatMoney, formatPercent } from '@/lib/format';
 import { provinceOutput } from '@/game/economy';
 
@@ -172,6 +173,28 @@ export default function ProvincePanel({ id }: { id: number }) {
       </div>
 
       </Collapsible>
+
+      {/* Nükleer saldırı */}
+      {!mine && (state.countries[me].nukes ?? 0) > 0 && canNuke(ctx, me, id).ok && (
+        <div className="mt-2">
+          <Button
+            variant="danger"
+            className="w-full"
+            onClick={async () => {
+              const ok = await ask({
+                title: t('nuke.launchTitle'),
+                body: t('nuke.launchBody', { province: lang === 'en' ? wp.nameEn : wp.name }),
+                confirmLabel: t('nuke.launch'),
+                cancelLabel: t('common.cancel'),
+                danger: true,
+              });
+              if (ok) cmd({ type: 'launchNuke', province: id });
+            }}
+          >
+            ☢ {t('nuke.launch')} ({state.countries[me].nukes})
+          </Button>
+        </div>
+      )}
 
       {/* Toprak işlemleri */}
       {!mine && ps.owner !== REBEL_TAG && owner?.alive && (

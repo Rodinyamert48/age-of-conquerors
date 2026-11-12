@@ -5,7 +5,7 @@
  */
 import type { Era, GovernmentType, Modifiers, PolicyId, Tag, TreatyType } from './types';
 import { POLICY_IDS } from './types';
-import { allianceOf, findTreaty, invalidateDiplomacy, neighborCountries, provincesOf, type Ctx } from './ctx';
+import { allianceOf, armiesAt, findTreaty, invalidateArmies, invalidateControl, invalidateDiplomacy, neighborCountries, provincesOf, type Ctx } from './ctx';
 import { addRelation, atWar, enemiesOf, isAtWar, REBEL_TAG, relation, warSide } from './query';
 import { chance, weightedPick, pick } from './rng';
 import { notify, newId } from './notify';
@@ -73,7 +73,9 @@ export type Effect =
   | { food: number }
   /** Ülkenin topraklarındaki çekirdeklerden ulusları bağımsız kılar; joinWarsOf verilirse bu ülkenin
    *  (olay sahibine karşı) savaşlarına onun safında katılırlar */
-  | { releaseNations: { tags: string[]; joinWarsOf?: string } };
+  | { releaseNations: { tags: string[]; joinWarsOf?: string } }
+  /** İç savaş: listedeki bölgeler (olay sahibinin) asi devlet tarafından ele geçirilir ve bağımsızlık savaşı başlar */
+  | { civilWar: { nation: string; provinces: string[] } };
 
 export interface EventOption {
   text: Localized;
@@ -276,6 +278,32 @@ export function applyEffects(ctx: Ctx, tag: Tag, effects: Effect[], target?: Tag
       c.policies[e.policy.id] = Math.max(0, Math.min(4, c.policies[e.policy.id] + e.policy.delta));
     } else if ('food' in e) {
       c.resources.stock.food = Math.max(0, c.resources.stock.food + e.food * c.resources.consumption.food);
+    } else if ('civilWar' in e) {
+      const nc = s.countries[e.civilWar.nation];
+      if (!nc || nc.alive) continue;
+      const ids = e.civilWar.provinces.map((id) => provIndex(ctx, id)).filter((p) => p >= 0 && s.provinces[p].owner === tag);
+      if (!ids.length) continue;
+      nc.alive = true;
+      nc.rebelMovement = true;
+      nc.treasury = 0;
+      nc.manpower = 0;
+      nc.stability = 40;
+      nc.capital = ids.reduce((best, p) => (s.provinces[p].pop > s.provinces[best].pop ? p : best), ids[0]);
+      for (const p of ids) {
+        const ps = s.provinces[p];
+        if (!ps.cores.includes(nc.tag)) ps.cores.push(nc.tag);
+        ps.controller = nc.tag;
+        ps.unrest = 0;
+        ps.siege = null;
+        // Bölgedeki ordular isyancılara geçer
+        for (const a of armiesAt(ctx, p)) if (a.owner === tag) a.owner = nc.tag;
+      }
+      invalidateControl(ctx);
+      invalidateArmies(ctx);
+      const pop = ids.reduce((n, p) => n + s.provinces[p].pop, 0);
+      const size = Math.round(Math.max(8000, Math.min(120000, pop * 0.012)) / 1000) * 1000;
+      createArmy(ctx, nc.tag, nc.capital, { infantry: size }, { morale: 0.9, name: `${nc.name} Ordusu` });
+      declareWar(ctx, nc.tag, tag, { type: 'independence', nation: nc.tag });
     } else if ('releaseNations' in e) {
       for (const n of e.releaseNations.tags) {
         const nc = s.countries[n];

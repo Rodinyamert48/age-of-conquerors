@@ -28,6 +28,7 @@ export default function PeaceDialog() {
   const [target, setTarget] = useState<Tag | null>(null);
   const [mode, setMode] = useState<Mode>('demand');
   const [provs, setProvs] = useState<number[]>([]);
+  const [gives, setGives] = useState<number[]>([]);
   const [rep, setRep] = useState({ on: false, amount: 0, months: 60 });
   const [release, setRelease] = useState<Tag[]>([]);
   const [vassal, setVassal] = useState(false);
@@ -50,12 +51,15 @@ export default function PeaceDialog() {
   }, [war, state, me]);
 
   const candidates = useMemo(() => {
-    if (!ctx || !war || !loser || !beneficiary || mode === 'white') return { provinces: [] as number[], nations: [] as Tag[] };
+    if (!ctx || !war || !loser || !beneficiary || mode === 'white') return { provinces: [] as number[], gives: [] as number[], nations: [] as Tag[] };
     const list = provincesOf(ctx, loser).filter((p) => validTerm(ctx, war, beneficiary, loser, { type: 'province', province: p }));
     list.sort((a, b) => termCost(ctx, war, beneficiary, loser, { type: 'province', province: b }) - termCost(ctx, war, beneficiary, loser, { type: 'province', province: a }));
     const nations = new Set<Tag>();
     for (const p of provincesOf(ctx, loser)) for (const c of ctx.s.provinces[p].cores) if (c !== loser && c !== beneficiary && ctx.s.countries[c] && c !== 'REB') nations.add(c);
-    return { provinces: list.slice(0, 80), nations: [...nations].filter((n) => validTerm(ctx, war, beneficiary, loser, { type: 'release', nation: n })) };
+    const giveList = provincesOf(ctx, beneficiary)
+      .filter((p) => validTerm(ctx, war, beneficiary, loser, { type: 'give', province: p }))
+      .sort((a, b) => ctx.w.data.provinces[a].name.localeCompare(ctx.w.data.provinces[b].name));
+    return { provinces: list.slice(0, 80), gives: giveList.slice(0, 120), nations: [...nations].filter((n) => validTerm(ctx, war, beneficiary, loser, { type: 'release', nation: n })) };
   }, [ctx, war, loser, beneficiary, mode]);
 
   const terms: PeaceTerm[] = useMemo(() => {
@@ -63,11 +67,12 @@ export default function PeaceDialog() {
     const out: PeaceTerm[] = [];
     if (annex) return [{ type: 'annex' }];
     for (const p of provs) out.push({ type: 'province', province: p });
+    for (const p of gives) out.push({ type: 'give', province: p });
     if (rep.on && rep.amount > 0) out.push({ type: 'reparations', amount: rep.amount, months: rep.months });
     for (const n of release) out.push({ type: 'release', nation: n });
     if (vassal) out.push({ type: 'vassalize' });
     return out;
-  }, [mode, provs, rep, release, vassal, annex]);
+  }, [mode, provs, gives, rep, release, vassal, annex]);
 
   if (!peace || !war || !state || !ctx || !counterpart || !beneficiary || !loser) return null;
   const myScore = scoreFor(war, me);
@@ -77,6 +82,7 @@ export default function PeaceDialog() {
 
   const reset = () => {
     setProvs([]);
+    setGives([]);
     setRelease([]);
     setVassal(false);
     setAnnex(false);
@@ -166,6 +172,22 @@ export default function PeaceDialog() {
                   })}
                 </div>
               </div>
+              {candidates.gives.length > 0 && (
+                <div>
+                  <div className="mb-1 text-xs uppercase tracking-[0.15em] text-gold-soft">{t('peace.giveTitle')}</div>
+                  <div className="grid max-h-36 grid-cols-1 gap-0.5 overflow-y-auto sm:grid-cols-2">
+                    {candidates.gives.map((p) => {
+                      const on = gives.includes(p);
+                      return (
+                        <label key={p} className={`flex cursor-pointer items-center gap-1.5 rounded px-1.5 py-0.5 text-xs ${on ? 'bg-gold/15' : 'hover:bg-white/5'}`}>
+                          <input type="checkbox" checked={on} disabled={annex} onChange={() => setGives(on ? gives.filter((x) => x !== p) : [...gives, p])} />
+                          <span className="truncate">{lang === 'en' ? ctx.w.data.provinces[p].nameEn : ctx.w.data.provinces[p].name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="flex items-center gap-2 text-xs">
                   <input type="checkbox" checked={rep.on} disabled={annex} onChange={() => setRep({ ...rep, on: !rep.on, amount: rep.amount || Math.round(loserIncome * 0.1 * 100) / 100 })} />

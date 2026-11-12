@@ -9,6 +9,7 @@ import { canEmbark, findPath, transportCapacity } from './movement';
 import { armySize, atWar, warSide, REBEL_TAG } from './query';
 import { availableTechs, buildingAvailability, cancelConstruction, canResearch, createArmy, mergeInto, startConstruction, startRecruit, techCost } from './construction';
 import { TECHS } from './defs/techs';
+import { aiNuclear, buildNuke, launchNuke } from './nuclear';
 import { BUILDING_DEFS } from './defs/buildings';
 import { BUILDING_IDS } from './types';
 import { computeAllBudgets } from './economy';
@@ -20,7 +21,8 @@ import { switchPlayer } from './engine';
 import { UNIT_DEFS } from './defs/units';
 
 export type Command =
-  | { type: 'moveArmy'; army: string; target: number }
+  /** amount: yalnızca bu kadar asker yola çıkar (ordu bölünür); yoksa ordunun tamamı */
+  | { type: 'moveArmy'; army: string; target: number; amount?: number }
   | { type: 'stopArmy'; army: string }
   | { type: 'mergeArmies'; armies: string[] }
   | { type: 'splitArmy'; army: string; units: Partial<ArmyUnits> }
@@ -44,6 +46,8 @@ export type Command =
   | { type: 'acknowledgeGameOver' }
   | { type: 'switchCountry'; tag: Tag }
   | { type: 'setTimeStep'; step: TimeStep }
+  | { type: 'buildNuke' }
+  | { type: 'launchNuke'; province: number }
   | { type: 'admin'; op: AdminOp };
 
 /** Yönetici (hile) menüsü işlemleri */
@@ -95,6 +99,24 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
           return fail('move.noTransport', { capacity: transportCapacity(ctx, a.owner) });
         }
         return fail('move.noPath');
+      }
+      // Kısmi gönderim: ordudan seçilen sayıda asker ayrılıp yola çıkar
+      const total = armySize(a);
+      if (cmd.amount !== undefined && cmd.amount > 0 && cmd.amount < total && !a.isNavy) {
+        const share = cmd.amount / total;
+        const take: Partial<ArmyUnits> = {};
+        for (const k of Object.keys(a.units) as UnitType[]) {
+          const n = Math.floor(a.units[k] * share);
+          if (n > 0) {
+            take[k] = n;
+            a.units[k] -= n;
+          }
+        }
+        const b = createArmy(ctx, me, a.location, take, { morale: a.morale, experience: a.experience });
+        b.supply = a.supply;
+        b.path = res.path;
+        invalidateArmies(ctx);
+        return ok({ days: res.days, army: b.id });
       }
       // İlerleme yalnızca aynı ilk adıma devam ediliyorsa korunur
       if (a.path[0] !== res.path[0]) a.progress = 0;
@@ -293,6 +315,18 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
     case 'setTimeStep': {
       if (!['day', 'week', 'month'].includes(cmd.step)) return fail('err.invalidTarget');
       s.rules.timeStep = cmd.step;
+      return ok();
+    }
+    case 'buildNuke': {
+      const r = buildNuke(ctx, me);
+      return r.ok ? ok() : fail(r.error ?? 'err.unknown');
+    }
+    case 'launchNuke': {
+      const r = launchNuke(ctx, me, cmd.province);
+      if (!r.ok) return fail(r.error ?? 'err.unknown');
+      // Nükleer güç karşılık verir
+      const victim = s.provinces[cmd.province].owner;
+      aiNuclear(ctx, victim, true, me);
       return ok();
     }
     case 'admin':

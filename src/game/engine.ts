@@ -15,7 +15,7 @@ import { makeCtx, invalidateAll, invalidateDiplomacy, provincesOf, type Ctx } fr
 import { getScenario } from './scenarios';
 import { parseDate, stepDays, monthsCrossed, dateFromDay } from './calendar';
 import { POLICY_DEFS } from './defs/policies';
-import { TECHS } from './defs/techs';
+import { NUCLEAR_TECH, TECHS } from './defs/techs';
 import { computeAllBudgets, economyTick, emptyBudget, emptyResources, provinceResourceOutput } from './economy';
 import { maxManpower, populationTick } from './population';
 import { createArmy, constructionTick, researchTick } from './construction';
@@ -193,7 +193,8 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
   for (const def of setup.countries) {
     const c = newCountry(def.tag, def.name, def.nameEn, def.flag, def.color);
     c.government = def.government;
-    c.techs = TECHS.filter((t) => t.year <= def.techYear).map((t) => t.id).concat(def.extraTechs ?? []);
+    c.techs = TECHS.filter((t) => t.year <= def.techYear && t.id !== NUCLEAR_TECH).map((t) => t.id).concat(def.extraTechs ?? []);
+    c.nukes = def.nukes ?? 0;
     for (const [k, v] of Object.entries(def.policies ?? {})) c.policies[k as PolicyId] = v as number;
     c.capital = setup.capitals[def.tag] ?? -1;
     c.alive = !def.inactive;

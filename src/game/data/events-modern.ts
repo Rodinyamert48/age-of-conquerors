@@ -77,4 +77,71 @@ export const MODERN_EVENTS: EventDef[] = [
       },
     ],
   },
+  {
+    id: 'modern_syria_civil_war',
+    historical: true,
+    scenarios: ['modern'],
+    countries: ['SYR'],
+    date: '2022-03-15',
+    once: true,
+    title: { tr: 'Suriye’de İç Savaş Kızışıyor', en: 'Civil War Intensifies in Syria' },
+    desc: {
+      tr: 'Merkezî yönetimin zayıflaması üzerine kuzeydoğu ve kuzeybatı bölgeleri kendi yönetimlerini ilan etmeye hazırlanıyor. Yeni asi devletler kurulabilir; savaşı kazanırlarsa bağımsızlıklarını elde ederler.',
+      en: 'As central authority weakens, the northeast and northwest are preparing to proclaim their own administrations. New rebel states may emerge; if they win the war they gain independence.',
+    },
+    options: [
+      {
+        text: { tr: 'İç savaş patlak veriyor', en: 'The civil war breaks out' },
+        effects: [
+          { civilWar: { nation: 'SDF', provinces: ['SYR-136', 'SYR-141', 'SYR-142'] } },
+          { civilWar: { nation: 'SNG', provinces: ['SYR-137'] } },
+          { stability: -15 },
+        ],
+        ai: 10,
+      },
+      { text: { tr: 'Taviz vererek ayrılığı önle', en: 'Prevent the split with concessions' }, effects: [{ treasury: -2 }, { stability: 2 }], ai: 1 },
+    ],
+  },
+  {
+    id: 'modern_sudan_rsf',
+    historical: true,
+    scenarios: ['modern'],
+    countries: ['SDN'],
+    date: '2023-04-15',
+    once: true,
+    title: { tr: 'Sudan’da Güç Mücadelesi', en: 'Power Struggle in Sudan' },
+    desc: {
+      tr: 'Ordu ile Hızlı Destek Kuvvetleri arasındaki gerilim silahlı çatışmaya dönüşüyor; Darfur bölgeleri ayrı bir yönetim kuruyor.',
+      en: 'Tension between the army and the Rapid Support Forces turns into armed conflict; the Darfur regions set up a separate administration.',
+    },
+    options: [
+      {
+        text: { tr: 'Çatışma başlıyor', en: 'Fighting begins' },
+        effects: [{ civilWar: { nation: 'RSF', provinces: ['SDN-5857', 'SDN-5858', 'SDN-5859', 'SDN-881-3', 'SDN-881-2', 'SDN-5856-2'] } }, { stability: -12 }],
+        ai: 10,
+      },
+      { text: { tr: 'Müzakereyle yatıştır', en: 'Calm it by negotiation' }, effects: [{ treasury: -1 }, { stability: 2 }], ai: 1 },
+    ],
+  },
+  {
+    id: 'modern_libya_split',
+    historical: true,
+    scenarios: ['modern'],
+    countries: ['LBY'],
+    date: '2020-04-04',
+    once: true,
+    title: { tr: 'Libya’da Doğu–Batı Ayrışması', en: 'East–West Split in Libya' },
+    desc: {
+      tr: 'Doğudaki komutanlar Trablus’taki hükûmeti tanımayacaklarını açıklıyor; Bingazi merkezli ayrı bir yönetim kuruluyor.',
+      en: 'Commanders in the east refuse to recognise the government in Tripoli; a separate administration is set up in Benghazi.',
+    },
+    options: [
+      {
+        text: { tr: 'Doğu ayrılıyor', en: 'The east splits away' },
+        effects: [{ civilWar: { nation: 'LNA', provinces: ['LBY-2984', 'LBY-2983', 'LBY-2987', 'LBY-2985'] } }, { stability: -10 }],
+        ai: 10,
+      },
+      { text: { tr: 'Yetki paylaşımı öner', en: 'Offer power sharing' }, effects: [{ treasury: -1 }, { stability: 3 }], ai: 1 },
+    ],
+  },
 ];

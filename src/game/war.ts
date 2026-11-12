@@ -327,6 +327,11 @@ export function termCost(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, term:
       const disc = hasClaimOrCore(ctx, beneficiary, term.province) ? 0.6 : 1;
       return (v / total) * 100 * disc;
     }
+    case 'give': {
+      // Armağan: karşı tarafın istediği bedeli düşürür
+      const v = provinceValue(ctx, term.province);
+      return -(v / total) * 100 * 0.8;
+    }
     case 'annex':
       return 100;
     case 'vassalize':
@@ -345,7 +350,7 @@ export function termCost(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, term:
 
 export function termsCost(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, terms: PeaceTerm[]): number {
   if (terms.some((t) => t.type === 'annex')) return 100;
-  return terms.reduce((sum, t) => sum + termCost(ctx, war, beneficiary, loser, t), 0);
+  return Math.max(0, terms.reduce((sum, t) => sum + termCost(ctx, war, beneficiary, loser, t), 0));
 }
 
 /** Şart geçerli mi */
@@ -361,8 +366,15 @@ export function validTerm(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, term
     }
     return enemiesIn(war, loser).includes(ps.controller) || hasClaimOrCore(ctx, beneficiary, term.province);
   }
+  if (term.type === 'give') {
+    const ps = s.provinces[term.province];
+    const bc = s.countries[beneficiary];
+    if (!ps || ps.owner !== beneficiary || ps.controller !== beneficiary) return false;
+    return !(bc && bc.capital === term.province);
+  }
   if (term.type === 'vassalize') return provincesOf(ctx, loser).length <= provincesOf(ctx, beneficiary).length * 1.5 + 2;
-  if (term.type === 'release') return term.nation !== beneficiary && term.nation !== loser && provincesOf(ctx, loser).some((p) => s.provinces[p].cores.includes(term.nation));
+  // Yararlanan taraf asi devletin kendisi olabilir (bağımsızlık savaşı kazanımı)
+  if (term.type === 'release') return term.nation !== loser && provincesOf(ctx, loser).some((p) => s.provinces[p].cores.includes(term.nation));
   if (term.type === 'reparations') return term.amount > 0 && term.months > 0 && term.months <= 120;
   return true;
 }
@@ -495,6 +507,9 @@ export function applyPeace(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, ter
       case 'province':
         transferProvince(ctx, t.province, beneficiary);
         break;
+      case 'give':
+        transferProvince(ctx, t.province, loser);
+        break;
       case 'annex':
         for (const p of [...provincesOf(ctx, loser)]) transferProvince(ctx, p, beneficiary);
         break;
@@ -524,14 +539,7 @@ export function applyPeace(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, ter
     if (!findTreaty(ctx, 'truce', a, b)) addTreaty(ctx, { type: 'truce', a, b, start: s.day, end: s.day + Math.round(BAL.truceYears * 365.25) });
     addRelation(s, a, b, 15);
   }
-  // Age of History 2 düzeni: barışta her taraf ele geçirdiği toprakları korur
-  if (separate) {
-    keepConquests(ctx, [loser], war[winnerSide]);
-    keepConquests(ctx, war[winnerSide], [loser]);
-  } else {
-    keepConquests(ctx, war.attackers, war.defenders);
-    keepConquests(ctx, war.defenders, war.attackers);
-  }
+  // Müzakerede alınmayan işgal toprakları sahibine döner (AoH2 gibi: toprak yalnızca barışta el değiştirir)
   if (separate) {
     war[loserSide] = war[loserSide].filter((x) => x !== loser);
     restoreControl(ctx, [loser], war[winnerSide]);
@@ -553,19 +561,6 @@ export function applyPeace(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, ter
     { severity: beneficiary === s.player ? 'good' : loser === s.player ? 'bad' : 'info', involves: [beneficiary, loser, ...leaving, ...opposing], global: true, focus: { war: war.id } },
   );
   checkEliminations(ctx);
-}
-
-/** owners tarafının bölgelerinden occupiers tarafınca ele geçirilenleri ele geçirene devret */
-function keepConquests(ctx: Ctx, owners: Tag[], occupiers: Tag[]): void {
-  const s = ctx.s;
-  const occ = new Set(occupiers.filter((t) => t !== REBEL_TAG));
-  for (const tag of owners) {
-    if (tag === REBEL_TAG) continue;
-    for (const p of [...provincesOf(ctx, tag)]) {
-      const ctrl = s.provinces[p].controller;
-      if (ctrl !== tag && occ.has(ctrl)) transferProvince(ctx, p, ctrl);
-    }
-  }
 }
 
 /**

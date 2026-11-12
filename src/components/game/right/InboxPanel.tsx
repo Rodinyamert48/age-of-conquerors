@@ -15,6 +15,10 @@ export function termText(term: PeaceTerm, ctx: Ctx, t: TFunc, lang: 'tr' | 'en',
       const wp = ctx.w.data.provinces[term.province];
       return `${t('peace.province')}: ${lang === 'en' ? wp.nameEn : wp.name}`;
     }
+    case 'give': {
+      const wp = ctx.w.data.provinces[term.province];
+      return `${t('peace.give')}: ${lang === 'en' ? wp.nameEn : wp.name}`;
+    }
     case 'reparations':
       return `${t('peace.reparations')}: ${t('peace.reparationsDesc', { amount: formatMoney(term.amount, lang), months: term.months })}`;
     case 'release':

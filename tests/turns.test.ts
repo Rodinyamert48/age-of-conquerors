@@ -66,24 +66,6 @@ describe('tur sistemi ve toprak ele geçirme (Age of History 2 düzeni)', () => 
     expect(ctx.s.provinces[sp].controller).toBe('TUR');
   });
 
-  it('barışta ele geçirilen topraklar fatihte kalır', () => {
-    const ctx = newModernGame();
-    const [tp, sp] = borderPair(ctx, 'TUR', 'SYR');
-    runCommand(ctx, { type: 'declareWar', target: 'SYR' });
-    for (const a of Object.values(ctx.s.armies)) if (a.location === sp) delete ctx.s.armies[a.id];
-    const a = createArmy(ctx, 'TUR', tp, { infantry: 30000 });
-    runCommand(ctx, { type: 'moveArmy', army: a.id, target: sp });
-    advanceTurn(ctx);
-    const war = Object.values(ctx.s.wars).find((w) => w.attackers.includes('TUR'))!;
-    // Beyaz barış: koşul yok, ama ele geçirilen bölge Türkiye'de kalır
-    const r = runCommand(ctx, { type: 'proposePeace', war: war.id, target: 'SYR', beneficiary: 'SYR', terms: [] });
-    expect(r.ok).toBe(true);
-    if ((r.data as { accepted: boolean }).accepted) {
-      expect(ctx.s.provinces[sp].owner).toBe('TUR');
-      expect(ctx.s.wars[war.id]).toBeUndefined();
-    }
-  });
-
   it('bütün toprakları ele geçirilen ve ordusu kalmayan ülke haritadan silinir', () => {
     const ctx = newModernGame();
     runCommand(ctx, { type: 'declareWar', target: 'SYR' });

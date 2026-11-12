@@ -127,6 +127,8 @@ export const TECHS: TechDef[] = [
   t('t_aviation', 'artillery', 'Askerî Havacılık', 'Military Aviation', 1912, { airPower: 0.05 }, { unlockUnits: ['air'] }),
   t('t_heavy_howitzers', 'artillery', 'Ağır Obüsler', 'Heavy Howitzers', 1914, { artilleryPower: 0.2, siegePower: 0.3, siegeSpeed: 0.15 }),
   t('t_self_propelled', 'artillery', 'Kundağı Motorlu Toplar', 'Self-Propelled Guns', 1942, { artilleryPower: 0.2, siegeSpeed: 0.2 }),
+  // Nükleer silah: dal sırasının dışındadır (yalnızca Kundağı Motorlu Toplar'dan sonra, yüksek maliyetle); başlangıçta yalnızca nükleer güçlerde vardır
+  t('t_nuclear', 'artillery', 'Nükleer Silah', 'Nuclear Weapons', 1946, { stability: 1 }),
   t('t_jets', 'artillery', 'Jet Uçakları', 'Jet Aircraft', 1950, { airPower: 0.4 }),
   t('t_precision', 'artillery', 'Hassas Güdümlü Mühimmat', 'Precision-Guided Munitions', 1991, { artilleryPower: 0.25, airPower: 0.25 }),
   t('t_stealth', 'artillery', 'Hayalet Teknolojisi', 'Stealth Technology', 2010, { airPower: 0.3 }),
@@ -170,18 +172,23 @@ export const TECHS: TechDef[] = [
   t('d_global_governance', 'diplomacy', 'Küresel Yönetişim', 'Global Governance', 2035, { acceptance: 5, warExhaustion: -0.1 }),
 ];
 
+export const NUCLEAR_TECH = 't_nuclear';
+// Nükleer program çok pahalıdır
+TECHS.find((x) => x.id === NUCLEAR_TECH)!.cost *= 8;
+
 export const TECH_BY_ID: Record<string, TechDef> = Object.fromEntries(TECHS.map((x) => [x.id, x]));
 
 /** Bir dalda önceki teknoloji (aynı dalda yıl sırasına göre) */
 export const TECH_PREREQ: Record<string, string | null> = (() => {
   const out: Record<string, string | null> = {};
   for (const b of TECH_BRANCHES) {
-    const list = TECHS.filter((x) => x.branch === b).sort((a, c) => a.year - c.year);
+    const list = TECHS.filter((x) => x.branch === b && x.id !== NUCLEAR_TECH).sort((a, c) => a.year - c.year);
     list.forEach((x, i) => (out[x.id] = i > 0 ? list[i - 1].id : null));
   }
+  out[NUCLEAR_TECH] = 't_self_propelled';
   return out;
 })();
 
 export function techsUpToYear(year: number): string[] {
-  return TECHS.filter((x) => x.year <= year).map((x) => x.id);
+  return TECHS.filter((x) => x.year <= year && x.id !== NUCLEAR_TECH).map((x) => x.id);
 }

@@ -10,6 +10,7 @@ import { aiArmies, aiRebels, aiRecruit } from './military';
 import { aiDiplomacy, aiPeace } from './diplomacy';
 import { hashString } from '../rng';
 import { provincesOf } from '../ctx';
+import { aiNuclear } from '../nuclear';
 
 function thinkInterval(ctx: Ctx, c: Country): number {
   const d = ctx.s.rules.difficulty;
@@ -35,6 +36,7 @@ export function aiTick(ctx: Ctx, newDay: Day): void {
     aiRecruit(ctx, c);
     aiArmies(ctx, c);
     aiPeace(ctx, c);
+    if (isAtWar(ctx, c.tag)) aiNuclear(ctx, c.tag);
     if (c.ai.nextDiplo <= newDay) {
       c.ai.nextDiplo = newDay + 25 + (hashString(c.tag) % 15);
       aiDiplomacy(ctx, c);

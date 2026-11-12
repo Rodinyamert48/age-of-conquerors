@@ -3,7 +3,12 @@ import { Landmark, Swords, Handshake, FlaskConical, X } from 'lucide-react';
 import { useUI, type LeftTab } from '@/store/ui';
 import { useT } from '@/i18n';
 import { useGame } from '@/store/game';
-import { Collapsible } from '@/components/ui';
+import { Button, Collapsible } from '@/components/ui';
+import { useLang } from '@/i18n';
+import { useCommand, useReadCtx } from './hooks';
+import { hasNuclearTech, nukeCost } from '@/game/nuclear';
+import { canAfford } from '@/game/economy';
+import { formatMoney } from '@/lib/format';
 import CountryTab from './tabs/CountryTab';
 import ArmiesTab from './tabs/ArmiesTab';
 import DiplomacyTab from './tabs/DiplomacyTab';
@@ -61,12 +66,37 @@ export default function LeftPanel() {
 }
 
 /** Ordu ve savaş: savaştayken savaşlar üstte açık, ordular altta */
+function NuclearCard() {
+  const t = useT();
+  const lang = useLang();
+  const state = useGame((s) => s.state);
+  const ctx = useReadCtx();
+  const cmd = useCommand();
+  if (!state || !ctx) return null;
+  const c = state.countries[state.player];
+  if (!hasNuclearTech(ctx, c.tag)) return null;
+  const cost = nukeCost(ctx);
+  return (
+    <div className="mt-2 rounded border border-danger/40 bg-danger/10 px-2.5 py-2">
+      <div className="flex items-center justify-between">
+        <span className="font-display text-[13px] uppercase tracking-[0.12em] text-[#f3c2bc]">{t('nuke.title')}</span>
+        <span className="tabular text-lg text-ink">{c.nukes ?? 0}</span>
+      </div>
+      <p className="mt-0.5 text-[11px] leading-snug text-muted">{t('nuke.hint')}</p>
+      <Button size="sm" variant="danger" className="mt-1.5 w-full" disabled={!canAfford(ctx, c.tag, cost)} onClick={() => cmd({ type: 'buildNuke' }, t('nuke.built'))}>
+        {t('nuke.build')} · {formatMoney(cost, lang)}
+      </Button>
+    </div>
+  );
+}
+
 function MilitaryTab() {
   const t = useT();
   const atWar = useGame((s) => (s.state ? Object.values(s.state.wars).some((w) => w.attackers.includes(s.state!.player) || w.defenders.includes(s.state!.player)) : false));
   return (
     <>
       {atWar && <WarsTab />}
+      <NuclearCard />
       <ArmiesTab />
       {!atWar && (
         <Collapsible title={t('tab.wars')}>

@@ -53,6 +53,7 @@ function NewGameInner() {
   const [continueAfterDefeat, setContinueAfterDefeat] = useState(true);
   const [aggression, setAggression] = useState(1);
   const [fog, setFog] = useState(false);
+  const [tutorial, setTutorial] = useState(false);
   const [seed, setSeed] = useState('');
   const [starting, setStarting] = useState(false);
 
@@ -121,7 +122,7 @@ function NewGameInner() {
         timeStep,
         victory: { mode: victoryMode, target: victoryTarget },
         seed: seedNum,
-        rules: { rebellions, historicalEvents: historical, capitalLoss, continueAfterDefeat, aiAggression: aggression, fogOfWar: fog },
+        rules: { rebellions, historicalEvents: historical, capitalLoss, continueAfterDefeat, aiAggression: aggression, fogOfWar: fog, tutorial },
       });
       router.push('/play');
     } catch (e) {
@@ -318,6 +319,9 @@ function NewGameInner() {
                   </RuleRow>
                   <RuleRow label={t('newGame.continueAfterDefeat')}>
                     <Toggle checked={continueAfterDefeat} onChange={setContinueAfterDefeat} label={t('newGame.continueAfterDefeat')} />
+                  </RuleRow>
+                  <RuleRow label={t('newGame.tutorial')}>
+                    <Toggle checked={tutorial} onChange={setTutorial} label={t('newGame.tutorial')} />
                   </RuleRow>
                   <RuleRow label={t('newGame.fogOfWar')}>
                     <Toggle checked={fog} onChange={setFog} label={t('newGame.fogOfWar')} />

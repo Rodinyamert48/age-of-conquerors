@@ -24,6 +24,8 @@ interface UIStore {
   right: RightView | null;
   selectedArmies: string[];
   moveMode: boolean;
+  /** hareket emrinde gönderilecek asker yüzdesi */
+  sendPct: number;
   mapMode: MapMode;
   focus: FocusRequest | null;
   peace: { warId: string; target: Tag } | null;
@@ -36,6 +38,7 @@ interface UIStore {
   selectArmies: (ids: string[]) => void;
   toggleArmy: (id: string) => void;
   setMoveMode: (v: boolean) => void;
+  setSendPct: (v: number) => void;
   setMapMode: (m: MapMode) => void;
   focusOn: (x: number, y: number, scale?: number) => void;
   openPeace: (warId: string, target: Tag) => void;
@@ -61,6 +64,7 @@ export const useUI = create<UIStore>()((set, get) => ({
   right: null,
   selectedArmies: [],
   moveMode: false,
+  sendPct: 100,
   mapMode: 'political',
   focus: null,
   peace: null,
@@ -80,6 +84,7 @@ export const useUI = create<UIStore>()((set, get) => ({
     set({ selectedArmies: next, right: next.length ? { kind: 'army' } : null });
   },
   setMoveMode: (v) => set({ moveMode: v }),
+  setSendPct: (v) => set({ sendPct: Math.max(5, Math.min(100, Math.round(v))) }),
   setMapMode: (m) => set({ mapMode: m }),
   focusOn: (x, y, scale) => set({ focus: { x, y, scale, nonce: nonce++ } }),
   openPeace: (warId, target) => set({ peace: { warId, target } }),

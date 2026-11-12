@@ -134,6 +134,24 @@ export default function ArmyPanel() {
       {mine && (
         <>
           <SectionTitle>{t('army.actions')}</SectionTitle>
+          {!a.isNavy && (
+            <div className="mb-2 rounded border border-line bg-panel-2 px-2 py-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted">{t('army.sendAmount')}</span>
+                <span className="tabular text-ink">
+                  {formatInt(Math.round((armySize(a) * ui.sendPct) / 100), lang)} / {formatInt(armySize(a), lang)}
+                </span>
+              </div>
+              <input type="range" min={5} max={100} step={5} value={ui.sendPct} onChange={(e) => ui.setSendPct(Number(e.target.value))} className="mt-1 w-full accent-[#d2ae5c]" aria-label={t('army.sendAmount')} />
+              <div className="mt-1 grid grid-cols-4 gap-1">
+                {[25, 50, 75, 100].map((p) => (
+                  <button type="button" key={p} onClick={() => ui.setSendPct(p)} className={`rounded border px-1 py-0.5 text-[11px] ${ui.sendPct === p ? 'border-gold bg-gold/20 text-gold-soft' : 'border-line-2 text-ink-2 hover:border-gold-2'}`}>
+                    %{p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-1.5">
             <Button size="sm" variant={ui.moveMode ? 'primary' : 'secondary'} disabled={!!a.battle} onClick={() => ui.setMoveMode(!ui.moveMode)}>
               <Move size={13} /> {t('army.move')}

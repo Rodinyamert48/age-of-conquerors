@@ -11,6 +11,7 @@ import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 import PeaceDialog from './PeaceDialog';
 import AdminPanel from './AdminPanel';
+import Tutorial from './Tutorial';
 import { GameOverDialog, HoverTooltip, MapModeBar, NotificationLog, PauseMenu } from './Overlays';
 import { useCommand, useReadCtx } from './hooks';
 import { findPath } from '@/game/movement';
@@ -65,7 +66,10 @@ export default function GameScreen() {
       for (const id of ids) {
         const a = st.armies[id];
         if (!a.isNavy && node >= (ctx?.w.P ?? 0)) continue;
-        const r = await useGame.getState().command({ type: 'moveArmy', army: id, target: node });
+        const pct = useUI.getState().sendPct;
+        const size = Object.values(a.units).reduce((n, v) => n + v, 0);
+        const amount = pct < 100 ? Math.max(1, Math.round((size * pct) / 100)) : undefined;
+        const r = await useGame.getState().command({ type: 'moveArmy', army: id, target: node, amount });
         if (r.ok) ok++;
         else push(t(r.error ?? 'err.unknown', r.errorParams), 'bad');
       }
@@ -237,6 +241,7 @@ export default function GameScreen() {
           />
           <MapModeBar />
           <AdminPanel />
+          <Tutorial />
           <HoverTooltip />
           {ui.moveMode && (
             <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded border border-gold-2 bg-panel/90 px-3 py-1 text-xs text-gold-soft">{t('army.moveMode')}</div>

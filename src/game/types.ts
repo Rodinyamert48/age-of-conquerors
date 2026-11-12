@@ -226,6 +226,8 @@ export interface Country {
   research: { current: string | null; progress: number };
   /** oyuncu için: araştırma bitince sıradaki teknolojiyi otomatik seç (tanımsız = açık) */
   autoResearch?: boolean;
+  /** nükleer başlık sayısı */
+  nukes?: number;
   /** Toprak talepleri (bölge indeksleri) */
   claims: number[];
   resources: ResourceLedger;
@@ -439,6 +441,8 @@ export interface DiploProposal {
 
 export type PeaceTerm =
   | { type: 'province'; province: number }
+  /** karşılığında verilen bölge: yararlanan tarafın bölgesi karşı tarafa geçer (takas) */
+  | { type: 'give'; province: number }
   | { type: 'reparations'; amount: number; months: number }
   | { type: 'release'; nation: Tag }
   | { type: 'vassalize' }
@@ -518,6 +522,8 @@ export interface GameRules {
   aiAggression: number;
   /** savaş sisi: yabancı ordu detaylarını gizle (yalnızca görsel) */
   fogOfWar: boolean;
+  /** öğretici modu: oyun içinde adım adım yönlendirme gösterilir */
+  tutorial?: boolean;
 }
 
 export interface GameMeta {

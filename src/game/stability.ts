@@ -4,6 +4,7 @@
  * Huzursuzluk yüksek bölgelerde isyan çıkabilir: çekirdeği başka bir ulusa ait bölgelerde
  * bağımsızlık savaşı, diğerlerinde genel isyan.
  */
+import { assimilationTick } from './assimilation';
 import type { Country, Tag } from './types';
 import { getMods, provincesOf, warsOf, armiesAt, invalidateOwnership, type Ctx } from './ctx';
 import { REBEL_TAG, armySoldiers, overlordOf } from './query';
@@ -52,7 +53,7 @@ export function provinceUnrestTarget(ctx: Ctx, p: number): number {
   if (!c) return 0;
   const mods = getMods(ctx, ps.owner);
   let u = (60 - c.stability) * 0.5;
-  if (!ps.cores.includes(ps.owner)) u += 25;
+  if (!ps.cores.includes(ps.owner)) u += ps.assimilating !== undefined ? 15 : 25;
   if (ps.controller !== ps.owner) u += 15;
   u += c.warExhaustion * 0.2;
   if (c.resources.shortage.food) u += 10;
@@ -72,6 +73,8 @@ export function stabilityTick(ctx: Ctx): void {
     // Süresi dolan geçici etkiler
     if (c.tempMods.some((m) => m.until <= s.day)) c.tempMods = c.tempMods.filter((m) => m.until > s.day);
   }
+  // Asimilasyon ilerlemesi (aylık)
+  assimilationTick(ctx, 30);
   // Huzursuzluk ve çekirdek entegrasyonu
   for (let p = 0; p < ctx.w.P; p++) {
     const ps = s.provinces[p];

@@ -449,6 +449,7 @@ export function transferProvince(ctx: Ctx, p: number, to: Tag): void {
   ps.construction = null;
   ps.recruits = [];
   ps.changedDay = s.day;
+  delete ps.assimilating;
   if (!ps.cores.includes(to)) ps.unrest = Math.min(100, ps.unrest + 20);
   const fc = s.countries[from];
   if (fc) fc.claims = fc.claims.filter((x) => x !== p);

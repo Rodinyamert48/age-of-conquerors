@@ -121,6 +121,7 @@ export function captureProvince(ctx: Ctx, p: number, by: Tag): void {
   ps.controller = newCtrl;
   ps.siege = null;
   ps.changedDay = s.day;
+  if (newCtrl !== ps.owner) delete ps.assimilating;
   ps.unrest = Math.min(100, ps.unrest + (newCtrl === ps.owner ? 0 : 15));
   invalidateControl(ctx);
   // Limandaki düşman donanmaları denize çıkar

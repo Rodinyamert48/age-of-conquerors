@@ -4,6 +4,7 @@
 import type { EventDef } from '../events';
 import { MODERN_EVENTS } from './events-modern';
 
+import { CHOICE_EVENTS } from './events-choices';
 export const GENERIC_EVENTS: EventDef[] = [
   {
     id: 'economic_crisis',
@@ -255,7 +256,7 @@ export const GENERIC_EVENTS: EventDef[] = [
 
 let all: EventDef[] | null = null;
 export function getEventDefs(): EventDef[] {
-  if (!all) all = [...GENERIC_EVENTS, ...MODERN_EVENTS];
+  if (!all) all = [...GENERIC_EVENTS, ...MODERN_EVENTS, ...CHOICE_EVENTS];
   return all;
 }
 

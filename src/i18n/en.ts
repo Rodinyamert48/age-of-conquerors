@@ -1029,4 +1029,10 @@ export const en: Record<string, string> = {
   'online.disconnected': 'Connection lost',
   'online.forbidden': 'Not allowed in online games',
   'menu.online': 'Join online',
+  'assimilate.progress': 'Assimilation',
+  'assimilate.hint': 'Conquered populations are restless and may rebel. Assimilation takes 5 years; afterwards the province becomes a core.',
+  'assimilate.start': 'Assimilate',
+  'assimilate.alreadyCore': 'Already a core province',
+  'assimilate.occupied': 'Province is occupied',
+  'assimilate.inProgress': 'Assimilation in progress',
 };

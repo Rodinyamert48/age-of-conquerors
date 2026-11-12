@@ -287,6 +287,8 @@ export interface ProvinceState {
   siege: SiegeState | null;
   /** son el değiştirme günü */
   changedDay: Day;
+  /** asimilasyon: çekirdek olmaya kalan gün (yoksa süreç yok) */
+  assimilating?: number;
 }
 
 export interface ArmyUnits {

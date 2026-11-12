@@ -9,6 +9,7 @@ import { findPath } from './movement';
 import { armySize, atWar, warSide, REBEL_TAG } from './query';
 import { availableTechs, buildingAvailability, cancelConstruction, canResearch, createArmy, mergeInto, startConstruction, startRecruit, techCost } from './construction';
 import { TECHS } from './defs/techs';
+import { startAssimilation } from './assimilation';
 import { aiNuclear, buildNuke, launchNuke } from './nuclear';
 import { appointMinisters, ministersDue, type MinisterRole } from './ministers';
 import { BUILDING_DEFS } from './defs/buildings';
@@ -47,6 +48,7 @@ export type Command =
   | { type: 'acknowledgeGameOver' }
   | { type: 'switchCountry'; tag: Tag }
   | { type: 'setTimeStep'; step: TimeStep }
+  | { type: 'assimilate'; province: number }
   | { type: 'appointMinisters'; picks: Partial<Record<MinisterRole, number>> }
   | { type: 'buildNuke' }
   | { type: 'launchNuke'; province: number }
@@ -345,6 +347,10 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
       if (!ministersDue(ctx, me)) return fail('minister.notDue');
       appointMinisters(ctx, me, cmd.picks);
       return ok();
+    }
+    case 'assimilate': {
+      const r = startAssimilation(ctx, me, cmd.province);
+      return r.ok ? ok() : fail(r.error ?? 'err.unknown');
     }
     case 'buildNuke': {
       const r = buildNuke(ctx, me);

@@ -1117,4 +1117,10 @@ export const tr: Record<string, string> = {
   'online.disconnected': 'Bağlantı koptu',
   'online.forbidden': 'Çevrimiçi oyunda bu işlem yapılamaz',
   'menu.online': 'Çevrimiçi katıl',
+  'assimilate.progress': 'Asimilasyon',
+  'assimilate.hint': 'Fethedilen bölge halkı huzursuzdur ve isyan çıkarabilir. Asimilasyon 5 yıl sürer; bitince bölge çekirdeğiniz olur.',
+  'assimilate.start': 'Asimile et',
+  'assimilate.alreadyCore': 'Bölge zaten çekirdek',
+  'assimilate.occupied': 'Bölge işgal altında',
+  'assimilate.inProgress': 'Asimilasyon sürüyor',
 };

@@ -19,6 +19,7 @@ import { assaultChance } from '@/game/siege';
 import { canNuke } from '@/game/nuclear';
 import { formatCompact, formatInt, formatMoney, formatPercent } from '@/lib/format';
 import { provinceOutput } from '@/game/economy';
+import { ASSIMILATION_DAYS, assimilationCost, canAssimilate } from '@/game/assimilation';
 
 export default function ProvincePanel({ id }: { id: number }) {
   const t = useT();
@@ -159,6 +160,26 @@ export default function ProvincePanel({ id }: { id: number }) {
         </div>
         <Bar value={ps.unrest} max={100} color={ps.unrest > 60 ? 'bg-danger' : ps.unrest > 30 ? 'bg-warn' : 'bg-good'} />
       </div>
+      {mine && !ps.cores.includes(me) && (
+        <div className="mt-1.5 rounded border border-line bg-panel-2 px-2 py-1.5 text-xs">
+          {ps.assimilating !== undefined ? (
+            <>
+              <div className="flex justify-between">
+                <span className="text-muted">{t('assimilate.progress')}</span>
+                <span className="tabular">{Math.round((1 - ps.assimilating / ASSIMILATION_DAYS) * 100)}%</span>
+              </div>
+              <Bar value={ASSIMILATION_DAYS - ps.assimilating} max={ASSIMILATION_DAYS} className="mt-1" />
+            </>
+          ) : (
+            <>
+              <div className="text-muted">{t('assimilate.hint')}</div>
+              <Button size="sm" className="mt-1" disabled={!canAssimilate(ctx, me, id).ok} onClick={() => cmd({ type: 'assimilate', province: id })}>
+                {t('assimilate.start')} ({formatMoney(assimilationCost(ctx, id), lang)})
+              </Button>
+            </>
+          )}
+        </div>
+      )}
       <div className="mt-1.5 flex flex-wrap items-center gap-1 text-xs">
         <span className="text-muted">{t('province.cores')}:</span>
         {ps.cores.map((c) => (

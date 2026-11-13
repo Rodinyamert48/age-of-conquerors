@@ -15,7 +15,7 @@ import type { FromWorker, ToWorker, Upcoming } from '@/worker/protocol';
 import type { SaveKind } from '@/lib/saves';
 import { useSettings } from './settings';
 import { dateFromDay } from '@/game/calendar';
-import { playSound } from '@/lib/audio';
+import { playDrums, playFanfare, playSound } from '@/lib/audio';
 import { asset } from '@/lib/base';
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
@@ -268,10 +268,13 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
         pendingState = null;
       }
       // Yeni bildirimler için ses
-      if (prev && msg.reason === 'turn') {
+      if (prev && (msg.reason === 'turn' || msg.reason === 'command')) {
         const lastId = prev.nextNotificationId;
         const fresh = msg.state.notifications.filter((n) => n.id >= lastId && n.player);
-        if (fresh.some((n) => n.severity === 'critical' || n.kind === 'war')) playSound('war');
+        if (fresh.some((n) => n.kind === 'war')) playDrums();
+        else if (fresh.some((n) => n.kind === 'peace')) playFanfare();
+        else if (msg.reason === 'command') void 0;
+        else if (fresh.some((n) => n.severity === 'critical')) playSound('war');
         else if (fresh.some((n) => n.kind === 'battle')) playSound('battle');
         else if (fresh.length) playSound('notify');
       }

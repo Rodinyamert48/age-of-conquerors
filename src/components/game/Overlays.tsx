@@ -14,6 +14,7 @@ import { Button, Flag, Modal, Segmented, Toggle, useConfirm, useToasts } from '@
 import { useCommand, useReadCtx, useCountryName } from './hooks';
 import { notificationText } from './text';
 import { OnlineHostButton, OnlineHostDialog } from './OnlineDialog';
+import HistoryDialog from './HistoryDialog';
 import { exportSaveFile } from '@/lib/saves';
 import { formatCompact, formatDate, formatMoney } from '@/lib/format';
 import { MAP_MODES, ECON_RAMP, STAB_RAMP, SUPPLY_RAMP, REL_RAMP, DIPLO_COLORS, TERRAIN_COLORS, rgbStr, type RGB } from '@/components/map/modes';
@@ -37,12 +38,14 @@ export function PauseMenu() {
   const push = useToasts((s) => s.push);
   const [saveName, setSaveName] = useState('');
   const [onlineOpen, setOnlineOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   if (!state) return null;
   const c = state.countries[state.player];
   const defaultName = `${c.name} — ${formatDate(state.day, lang)}`;
   return (
     <>
     <OnlineHostDialog open={onlineOpen} onClose={() => setOnlineOpen(false)} />
+    <HistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
     <Modal open={open} onClose={() => setOpen(false)} title={t('pause.title')}>
       <div className="flex flex-col gap-2 text-sm">
         <Button variant="primary" onClick={() => setOpen(false)}>
@@ -106,6 +109,14 @@ export function PauseMenu() {
           >
             {t('admin.open')}
           </Button>
+          <Button
+            onClick={() => {
+              setOpen(false);
+              setHistoryOpen(true);
+            }}
+          >
+            {t('history.title')}
+          </Button>
           <OnlineHostButton
             onOpen={() => {
               setOpen(false);
@@ -144,6 +155,7 @@ export function GameOverDialog() {
   const cmd = useCommand();
   const name = useCountryName();
   const [choose, setChoose] = useState(false);
+  const [history, setHistory] = useState(false);
   const alive = useMemo(
     () => (state ? Object.values(state.countries).filter((c) => c.alive && c.tag !== REBEL_TAG && !c.rebelMovement).sort((a, b) => name(a.tag).localeCompare(name(b.tag), lang)) : []),
     [state, name, lang],
@@ -169,8 +181,10 @@ export function GameOverDialog() {
               {t('gameover.chooseCountry')}
             </Button>
           )}
+          <Button onClick={() => setHistory(true)}>{t('history.title')}</Button>
           <Button onClick={() => router.push('/')}>{t('gameover.toMenu')}</Button>
         </div>
+        <HistoryDialog open={history} onClose={() => setHistory(false)} />
         {choose && (
           <div className="max-h-64 w-full overflow-y-auto rounded border border-line bg-panel-2 p-1 text-left">
             {alive.map((c) => (

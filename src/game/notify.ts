@@ -19,6 +19,11 @@ export function notify(
   const s = ctx.s;
   const player = !!opts.involves?.includes(s.player);
   if (!player && !opts.global) return;
+  // Tarihçe: oyuncuyu ilgilendiren savaş, barış ve kritik olaylar zaman çizelgesine yazılır
+  if (player && (kind === 'war' || kind === 'peace' || key.startsWith('notif.election') || (opts.severity === 'critical' && kind !== 'battle'))) {
+    (s.chronicle ??= []).push({ day: s.day, key, params, severity: opts.severity ?? 'info' });
+    if (s.chronicle.length > 300) s.chronicle.splice(0, s.chronicle.length - 300);
+  }
   s.notifications.push({
     id: s.nextNotificationId++,
     day: s.day,

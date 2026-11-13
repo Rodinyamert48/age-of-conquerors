@@ -9,6 +9,7 @@
  *   5. Diplomatik süreler        10. Tarih ve tur sayacı
  */
 import { espionageTick } from './espionage';
+import { electionTick } from './elections';
 import type { Country, Difficulty, GameRules, GameState, PolicyId, Tag, TimeStep, VictoryRules } from './types';
 import { POLICY_IDS, RESOURCE_IDS } from './types';
 import type { World } from './world';
@@ -397,6 +398,7 @@ export function advanceTurn(ctx: Ctx): void {
   if (monthChanged) {
     relationTick(ctx);
     espionageTick(ctx);
+    electionTick(ctx);
   }
   // 6. İnşaat, asker toplama, araştırma
   ministerTick(ctx);

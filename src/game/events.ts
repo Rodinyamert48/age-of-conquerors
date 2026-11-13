@@ -71,6 +71,8 @@ export type Effect =
   | { government: GovernmentType }
   | { policy: { id: PolicyId; delta: number } }
   | { food: number }
+  /** seçim kazanma olasılığına eklenir */
+  | { electionBonus: number }
   /** Ülkenin topraklarındaki çekirdeklerden ulusları bağımsız kılar; joinWarsOf verilirse bu ülkenin
    *  (olay sahibine karşı) savaşlarına onun safında katılırlar */
   | { releaseNations: { tags: string[]; joinWarsOf?: string } }
@@ -208,6 +210,7 @@ export function applyEffects(ctx: Ctx, tag: Tag, effects: Effect[], target?: Tag
   if (!c) return;
   for (const e of effects) {
     if ('treasury' in e) c.treasury += e.treasury * Math.max(0, c.budget.income);
+    else if ('electionBonus' in e) c.electionBonus = (c.electionBonus ?? 0) + e.electionBonus;
     else if ('stability' in e) c.stability = Math.max(0, Math.min(100, c.stability + e.stability));
     else if ('warExhaustion' in e) c.warExhaustion = Math.max(0, Math.min(100, c.warExhaustion + e.warExhaustion));
     else if ('manpower' in e) c.manpower = Math.max(0, c.manpower + e.manpower * maxManpower(ctx, tag));
@@ -350,7 +353,7 @@ export function fireEvent(ctx: Ctx, def: EventDef, tag: Tag): boolean {
     target = t;
   }
   s.firedEvents[`${def.id}|${tag}`] = s.day;
-  if (tag === s.player) {
+  if ((s.humans ?? [s.player]).includes(tag)) {
     s.pendingEvents.push({ uid: newId(ctx, 'e'), eventId: def.id, country: tag, day: s.day, expires: s.day + 30, target });
     notify(ctx, 'event', 'notif.eventFired', { event: def.id }, { severity: 'info', involves: [tag] });
     return true;

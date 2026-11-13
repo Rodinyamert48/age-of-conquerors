@@ -234,6 +234,11 @@ export interface Country {
   nukes?: number;
   /** bakanlar (yedi bakanlık) ve atama bilgisi */
   ministers?: Partial<Record<'interior' | 'foreign' | 'defense' | 'education' | 'staff' | 'health' | 'finance' | 'intelligence', { name: string; trait: string }>>;
+  /** seçimler (demokratik ülkeler) */
+  nextElection?: Day;
+  electionBonus?: number;
+  campaignAsked?: boolean;
+  lastElection?: { day: Day; won: boolean };
   /** casus ağları: hedef ülke → ağ gücü (0..100) */
   spies?: Record<Tag, number>;
   ministerRound?: number;
@@ -249,7 +254,7 @@ export interface Country {
   /** Ülkenin başlangıçtaki/yeniden doğuştaki çekirdek bölgesi sayısı (bağımsızlık için) */
   bankruptUntil: Day;
   /** İstatistikler */
-  stats: { battlesWon: number; battlesLost: number; casualties: number; kills: number; provincesConquered: number };
+  stats: { battlesWon: number; battlesLost: number; casualties: number; kills: number; provincesConquered: number; warsWon?: number; warsLost?: number };
   /** Bağımsızlığını tanıyan ülkeler (isyanla kurulan devletler için) */
   recognizedBy: Tag[];
   /** Senaryo verisi: ilk GSYH/kişi başı gelir ölçeği */
@@ -600,6 +605,8 @@ export interface GameState {
   /** Harita yeniden çizimi için sayaçlar */
   versions: { owners: number; armies: number };
   gameOver: null | { result: 'victory' | 'defeat'; reason: string; day: Day; acknowledged: boolean };
+  /** oyuncunun tarihçesi: önemli olayların zaman çizelgesi */
+  chronicle?: { day: Day; key: string; params: Record<string, string | number>; severity: 'info' | 'good' | 'bad' | 'critical' }[];
   /** Her ülke için son ekonomik kayıtlar (grafik için) */
   history: { day: Day; treasury: number; income: number; provinces: number }[];
 }

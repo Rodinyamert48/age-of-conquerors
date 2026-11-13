@@ -582,6 +582,10 @@ export function applyPeace(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, ter
         break;
     }
   }
+  if (terms.length && bc && s.countries[loser]) {
+    bc.stats.warsWon = (bc.stats.warsWon ?? 0) + 1;
+    s.countries[loser].stats.warsLost = (s.countries[loser].stats.warsLost ?? 0) + 1;
+  }
   const winnerSide = warSide(war, beneficiary)!;
   const loserSide = winnerSide === 'attackers' ? 'defenders' : 'attackers';
   const leaving = separate ? [loser] : war[loserSide];

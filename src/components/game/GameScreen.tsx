@@ -13,6 +13,8 @@ import PeaceDialog from './PeaceDialog';
 import AdminPanel from './AdminPanel';
 import Tutorial from './Tutorial';
 import ChatPanel from './ChatPanel';
+import PerfOverlay from './PerfOverlay';
+import { listSaves, readSave } from '@/lib/saves';
 import MinisterDialog from './MinisterDialog';
 import { GameOverDialog, HoverTooltip, MapModeBar, NotificationLog, PauseMenu } from './Overlays';
 import { useCommand, useReadCtx } from './hooks';
@@ -174,9 +176,32 @@ export default function GameScreen() {
         }
       }
       if (!s.keyboardShortcuts) return;
+      // F9: en son hızlı kaydı yükle
+      if (e.code === 'F9' && !e.repeat) {
+        e.preventDefault();
+        void quickLoad().then((ok) => push(t(ok ? 'pause.quickLoaded' : 'pause.noQuickSave'), ok ? 'good' : 'bad'));
+        return;
+      }
       const tgt = e.target as HTMLElement | null;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.tagName === 'SELECT' || tgt.isContentEditable)) return;
       if (document.querySelector('[role="dialog"]') && e.code !== s.keys.deselect) return;
+      // N: sıradaki orduya geç (klavye ile oynama)
+      if (e.code === 'KeyN' && !document.querySelector('[role="dialog"]')) {
+        const st = useGame.getState().state;
+        const w = useGame.getState().world;
+        if (st && w) {
+          const mine = Object.values(st.armies).filter((a) => a.owner === st.player);
+          if (mine.length) {
+            const cur = useUI.getState().selectedArmies[0];
+            const i = mine.findIndex((a) => a.id === cur);
+            const next = mine[(i + (e.shiftKey ? mine.length - 1 : 1)) % mine.length];
+            useUI.getState().selectArmies([next.id]);
+            useUI.getState().focusOn(w.x[next.location], w.y[next.location]);
+          }
+        }
+        e.preventDefault();
+        return;
+      }
       const action = (Object.keys(s.keys) as KeyAction[]).find((k) => s.keys[k] === e.code);
       if (!action) return;
       const g = useGame.getState();
@@ -223,7 +248,7 @@ export default function GameScreen() {
   return (
     <div className="flex h-full flex-col bg-bg">
       <TopBar />
-      <div className="relative flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1 flex-col-reverse md:flex-row">
         <LeftPanel />
         <div className="relative min-w-0 flex-1">
           <MapCanvas
@@ -255,10 +280,22 @@ export default function GameScreen() {
       <PeaceDialog />
       <MinisterDialog />
       <ChatPanel />
+      <PerfOverlay />
       <PauseMenu />
       <GameOverDialog />
     </div>
   );
+}
+
+/** En son hızlı kaydı yükle (F9) */
+export async function quickLoad(): Promise<boolean> {
+  const g = useGame.getState();
+  if (!g.world) return false;
+  const quick = (await listSaves()).filter((m) => m.kind === 'quick').sort((a, b) => b.savedAt - a.savedAt)[0];
+  if (!quick) return false;
+  const st = await readSave(quick.id, g.world.P);
+  await g.loadState(st);
+  return true;
 }
 
 function readCapital(st: ReturnType<typeof useGame.getState>['state']): number | null {

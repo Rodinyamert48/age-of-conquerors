@@ -1206,4 +1206,13 @@ export const tr: Record<string, string> = {
   'online.countryUnavailable': 'Bu ülke artık oynanamıyor',
   'online.countryTaken': 'Bu ülke başka bir oyuncuda',
   'peace.sentToPlayer': 'Barış teklifi karşı oyuncuya gönderildi',
+  'settings.colorBlind': 'Renk körlüğü paleti',
+  'settings.colorBlindHint': 'Kırmızı/yeşil yerine turuncu/mavi; harita renkleri ayrıştırılır',
+  'settings.textSize': 'Yazı boyutu',
+  'settings.text.normal': 'Normal',
+  'settings.text.large': 'Büyük',
+  'settings.text.xlarge': 'Çok büyük',
+  'pause.quickLoad': 'Hızlı yükle (F9)',
+  'pause.quickLoaded': 'Hızlı kayıt yüklendi',
+  'pause.noQuickSave': 'Hızlı kayıt bulunamadı',
 };

@@ -122,3 +122,23 @@ input[type="range"] {
     radial-gradient(ellipse at 20% 80%, rgba(120, 90, 40, 0.12), transparent 50%),
     var(--color-bg);
 }
+
+/* Erişilebilirlik: büyük yazı (rem tabanlı arayüz bütünüyle ölçeklenir) */
+html[data-text='large'] {
+  font-size: 18px;
+}
+html[data-text='xlarge'] {
+  font-size: 20px;
+}
+/* Renk körlüğü paleti: kırmızı/yeşil yerine turuncu/mavi */
+html[data-cb='on'] {
+  --color-good: #56b4e9;
+  --color-danger: #e69f00;
+  --color-warn: #f0e442;
+  --color-info: #cc79a7;
+}
+/* Klavye ile gezinirken belirgin odak çerçevesi */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}

@@ -74,6 +74,12 @@ export default function SettingsPage() {
         </Row>
 
         <SectionTitle>{t('settings.graphics')}</SectionTitle>
+        <Row label={t('settings.colorBlind')} hint={t('settings.colorBlindHint')}>
+          <Toggle checked={s.colorBlind} onChange={(v) => s.set({ colorBlind: v })} label={t('settings.colorBlind')} />
+        </Row>
+        <Row label={t('settings.textSize')}>
+          <Segmented value={s.textSize ?? 'normal'} onChange={(v) => s.set({ textSize: v })} options={(['normal', 'large', 'xlarge'] as const).map((x) => ({ value: x, label: t(`settings.text.${x}`) }))} />
+        </Row>
         <Row label={t('settings.animations')}>
           <Toggle checked={s.animations} onChange={(v) => s.set({ animations: v })} label={t('settings.animations')} />
         </Row>

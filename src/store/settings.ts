@@ -54,6 +54,9 @@ export interface SettingsState {
   notifications: Record<NotificationKind, boolean>;
   defaultMapMode: MapMode;
   keyboardShortcuts: boolean;
+  /** erişilebilirlik: renk körlüğü paleti ve yazı boyutu */
+  colorBlind: boolean;
+  textSize: 'normal' | 'large' | 'xlarge';
   keys: Record<KeyAction, string>;
   set: (patch: Partial<Omit<SettingsState, 'set' | 'reset' | 'setKey'>>) => void;
   setKey: (action: KeyAction, code: string) => void;
@@ -89,6 +92,8 @@ const DEFAULTS: Omit<SettingsState, 'set' | 'reset' | 'setKey'> = {
   },
   defaultMapMode: 'political',
   keyboardShortcuts: true,
+  colorBlind: false,
+  textSize: 'normal',
   keys: DEFAULT_KEYS,
 };
 

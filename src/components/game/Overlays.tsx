@@ -15,6 +15,7 @@ import { useCommand, useReadCtx, useCountryName } from './hooks';
 import { notificationText } from './text';
 import { OnlineHostButton, OnlineHostDialog } from './OnlineDialog';
 import HistoryDialog from './HistoryDialog';
+import { quickLoad } from './GameScreen';
 import { exportSaveFile } from '@/lib/saves';
 import { formatCompact, formatDate, formatMoney } from '@/lib/format';
 import { MAP_MODES, ECON_RAMP, STAB_RAMP, SUPPLY_RAMP, REL_RAMP, DIPLO_COLORS, TERRAIN_COLORS, rgbStr, type RGB } from '@/components/map/modes';
@@ -79,6 +80,15 @@ export function PauseMenu() {
             }}
           >
             <Save size={14} /> {t('key.quickSave')}
+          </Button>
+          <Button
+            onClick={async () => {
+              const ok = await quickLoad();
+              push(t(ok ? 'pause.quickLoaded' : 'pause.noQuickSave'), ok ? 'good' : 'bad');
+              if (ok) setOpen(false);
+            }}
+          >
+            <FolderOpen size={14} /> {t('pause.quickLoad')}
           </Button>
           <Button onClick={() => exportSaveFile(state, `aoc-${state.player}-${state.day}.json`)}>
             <Download size={14} /> {t('pause.export')}

@@ -179,6 +179,23 @@ export function mute(c: RGB): RGB {
   return [f(c[0]), f(c[1]), f(c[2])];
 }
 
+/** Renk körlüğü düzeltmesi (daltonize): kırmızı-yeşil farkını mavi-sarı eksenine ve parlaklığa taşır */
+export function daltonize(c: RGB): RGB {
+  const [r, g, b] = c;
+  const sr = 0.625 * r + 0.375 * g;
+  const sg = 0.7 * r + 0.3 * g;
+  const sb = 0.3 * g + 0.7 * b;
+  const er = r - sr;
+  const eg = g - sg;
+  const eb = b - sb;
+  const f = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  return [f(r), f(g + 0.7 * er + eg), f(b + 0.7 * er + eb)];
+}
+
+export function daltonizeColoring(c: ProvinceColoring): ProvinceColoring {
+  return { fill: c.fill.map(daltonize), stripe: c.stripe.map((s) => (s ? daltonize(s) : null)) };
+}
+
 export function rgbStr(c: RGB, a = 1): string {
   return a === 1 ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 }

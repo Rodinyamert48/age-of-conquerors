@@ -1,11 +1,11 @@
 'use client';
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { GameState, GeoData, MapMode, Tag } from '@/game/types';
 import type { World } from '@/game/world';
 import { makeCtx, type Ctx } from '@/game/ctx';
 import { buildGeometry, hitTest, type MapGeometry } from './geometry';
 import { MapRenderer, type Selection } from './renderer';
-import { computeColoring, type ProvinceColoring } from './modes';
+import { computeColoring, type ProvinceColoring, daltonizeColoring } from './modes';
 import { useSettings } from '@/store/settings';
 
 export interface MapClick {
@@ -68,6 +68,7 @@ export default function MapCanvas(props: Props) {
   const rendererRef = useRef<MapRenderer | null>(null);
   const frame = useRef<number>(0);
   const hoverRef = useRef<number>(-1);
+  const [kbd, setKbd] = useState(false);
   const quality = useSettings((s) => s.mapQuality);
   const animations = useSettings((s) => s.animations);
   const lang = useSettings((s) => s.language);
@@ -78,8 +79,9 @@ export default function MapCanvas(props: Props) {
   // Renklendirme: siyasi katman yalnızca sahiplik değişince, diğer katmanlar en çok ayda bir yeniden hesaplanır
   const month = Math.floor(state.day / 30.44);
   const coloringKey = mode === 'political' || mode === 'terrain' ? `${mode}|${state.versions.owners}|${viewer}` : `${mode}|${viewer}|${month}|${state.versions.owners}`;
+  const colorBlind = useSettings((s) => s.colorBlind);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const coloring = useMemo<ProvinceColoring>(() => computeColoring(rctx, mode, viewer), [coloringKey]);
+  const coloring = useMemo<ProvinceColoring>(() => (colorBlind ? daltonizeColoring(computeColoring(rctx, mode, viewer)) : computeColoring(rctx, mode, viewer)), [coloringKey, colorBlind]);
 
   // Son durumu çizim döngüsünün okuyabilmesi için ref'lerde tut (render sonrası güncellenir)
   const latest = useRef({ rctx, selection, props, quality, animations, lang, coloring });
@@ -176,6 +178,7 @@ export default function MapCanvas(props: Props) {
     const pointers = new Map<number, { x: number; y: number }>();
     let down: { x: number; y: number; button: number; moved: boolean; vx: number; vy: number } | null = null;
     let pinchDist = 0;
+    let lastTap = { t: 0, x: 0, y: 0 };
     // Dokunmatik ekranda uzun basış = sağ tık (hedef gösterme)
     let longPress: ReturnType<typeof setTimeout> | null = null;
     const clearLong = () => {
@@ -232,6 +235,7 @@ export default function MapCanvas(props: Props) {
         return;
       }
       const r = rendererRef.current!;
+      setKbd(false);
       down = { x, y, button: e.button, moved: false, vx: r.view.x, vy: r.view.y };
       clearLong();
       if (e.pointerType === 'touch' || e.pointerType === 'pen') {
@@ -293,7 +297,18 @@ export default function MapCanvas(props: Props) {
       down = null;
       if (wasDrag) return;
       const p = pick(x, y);
-      latest.current.props.onClick?.({ ...p, button, shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey, touch: e.pointerType === 'touch' || e.pointerType === 'pen' });
+      const touch = e.pointerType === 'touch' || e.pointerType === 'pen';
+      // Çift dokunma: dokunulan ülkeye yakınlaş (ülkenin tamamı ekrana sığar)
+      if (touch) {
+        const now = performance.now();
+        const dbl = now - lastTap.t < 320 && Math.hypot(x - lastTap.x, y - lastTap.y) < 36;
+        lastTap = { t: dbl ? 0 : now, x, y };
+        if (dbl) {
+          zoomToCountry(p.province, x, y);
+          return;
+        }
+      }
+      latest.current.props.onClick?.({ ...p, button, shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey, touch });
     };
     const onLeave = () => {
       if (hoverRef.current !== -1) {
@@ -309,6 +324,35 @@ export default function MapCanvas(props: Props) {
       const [x, y] = local(e);
       const factor = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016));
       r.zoomAt(x, y, factor);
+      viewDraw();
+    };
+    const zoomToCountry = (province: number, sx: number, sy: number) => {
+      const r = rendererRef.current;
+      if (!r) return;
+      const s = latest.current.rctx.s;
+      if (province < 0) {
+        r.zoomAt(sx, sy, 1.8);
+        viewDraw();
+        return;
+      }
+      const owner = s.provinces[province].owner;
+      let x0 = Infinity;
+      let y0 = Infinity;
+      let x1 = -Infinity;
+      let y1 = -Infinity;
+      const bb = geometry.bbox;
+      const px = world.x[province];
+      for (let i = 0; i < world.P; i++) {
+        if (s.provinces[i].owner !== owner) continue;
+        // Uzak denizaşırı topraklar ülkeyi küçültmesin
+        if (Math.abs(world.x[i] - px) > geometry.width * 0.18) continue;
+        if (bb[i * 4] < x0) x0 = bb[i * 4];
+        if (bb[i * 4 + 1] < y0) y0 = bb[i * 4 + 1];
+        if (bb[i * 4 + 2] > x1) x1 = bb[i * 4 + 2];
+        if (bb[i * 4 + 3] > y1) y1 = bb[i * 4 + 3];
+      }
+      const scale = Math.min(6, Math.min(r.cssW / Math.max(1, x1 - x0), r.cssH / Math.max(1, y1 - y0)) * 0.8);
+      r.centerOn((x0 + x1) / 2, (y0 + y1) / 2, scale);
       viewDraw();
     };
     const onDbl = (e: MouseEvent) => {
@@ -329,8 +373,17 @@ export default function MapCanvas(props: Props) {
       else if (e.key === 'ArrowUp') r.view.y -= step;
       else if (e.key === 'ArrowDown') r.view.y += step;
       else if (e.key === 'PageUp') r.zoomAt(r.cssW / 2, r.cssH / 2, 1.25);
-      else if (e.key === 'PageDown') r.zoomAt(r.cssW / 2, r.cssH / 2, 0.8);
-      else return;
+      else if (e.key === 'PageDown' || e.key === '-') r.zoomAt(r.cssW / 2, r.cssH / 2, 0.8);
+      else if (e.key === '+' || e.key === '=') r.zoomAt(r.cssW / 2, r.cssH / 2, 1.25);
+      else if ((e.key === 'Enter' || e.code === 'KeyG') && !document.querySelector('[role="dialog"]') && (t === document.body || t === canvas)) {
+        // Klavye imleci: ekran ortasındaki bölgeyi seç (Enter) ya da seçili orduyu oraya gönder (Shift+Enter / G)
+        const p = pick(r.cssW / 2, r.cssH / 2);
+        setKbd(true);
+        latest.current.props.onClick?.({ ...p, button: e.shiftKey || e.code === 'KeyG' ? 2 : 0, shift: false, ctrl: false, touch: false });
+        e.preventDefault();
+        return;
+      } else return;
+      setKbd(true);
       r.clampView();
       viewDraw();
     };
@@ -361,7 +414,8 @@ export default function MapCanvas(props: Props) {
   return (
     <div ref={wrapRef} className={`relative h-full w-full overflow-hidden ${props.className ?? ''}`} style={{ background: '#0e1c2e' }}>
       <canvas ref={baseRef} className="pointer-events-none absolute inset-0 block h-full w-full" aria-hidden="true" />
-      <canvas ref={canvasRef} className="relative block h-full w-full touch-none select-none" style={{ cursor: 'crosshair' }} aria-label="Dünya haritası" role="img" />
+      <canvas ref={canvasRef} tabIndex={0} className="relative block h-full w-full touch-none select-none outline-none" style={{ cursor: 'crosshair' }} aria-label="Dünya haritası. Ok tuşları: kaydır, artı/eksi: yakınlaştır, Enter: ortadaki bölgeyi seç, G: seçili orduyu gönder" role="application" />
+      {kbd && <div className="pointer-events-none absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-gold shadow-[0_0_0_1px_rgba(0,0,0,0.8)]" aria-hidden data-testid="kbd-cursor" />}
       <div className="pointer-events-none absolute bottom-2 right-3 flex gap-1">
         <ZoomButtons rendererRef={rendererRef} requestDraw={viewDraw} />
       </div>

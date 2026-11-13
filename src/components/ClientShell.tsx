@@ -10,7 +10,13 @@ export default function ClientShell({ children }: { children: ReactNode }) {
   const animations = useSettings((s) => s.animations);
   const musicEnabled = useSettings((s) => s.musicEnabled);
   const musicVolume = useSettings((s) => s.musicVolume);
+  const colorBlind = useSettings((s) => s.colorBlind);
+  const textSize = useSettings((s) => s.textSize);
   const [interacted, setInteracted] = useState(false);
+  useEffect(() => {
+    document.documentElement.dataset.cb = colorBlind ? 'on' : 'off';
+    document.documentElement.dataset.text = textSize ?? 'normal';
+  }, [colorBlind, textSize]);
 
   useEffect(() => {
     document.documentElement.lang = language;

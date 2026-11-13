@@ -1,5 +1,5 @@
 'use client';
-import { Landmark, Swords, Handshake, FlaskConical, X } from 'lucide-react';
+import { Landmark, Swords, Handshake, FlaskConical, X, Bell, ArrowRight } from 'lucide-react';
 import { useUI, type LeftTab } from '@/store/ui';
 import { useT } from '@/i18n';
 import { useGame } from '@/store/game';
@@ -30,7 +30,8 @@ export default function LeftPanel() {
   const close = () => useUI.getState().setLeftTab(null);
   return (
     <>
-      <nav className="z-20 flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-line bg-panel py-1.5" aria-label="Paneller">
+      {/* Mobilde alt çubuk, geniş ekranda sol şerit */}
+      <nav className="z-30 flex h-12 w-full shrink-0 flex-row items-center justify-around gap-0.5 border-t border-line bg-panel md:h-auto md:w-11 md:flex-col md:justify-start md:border-r md:border-t-0 md:py-1.5" aria-label="Paneller">
         {TABS.map((tb) => (
           <button
             type="button"
@@ -44,9 +45,15 @@ export default function LeftPanel() {
             <tb.icon size={18} />
           </button>
         ))}
+        <button type="button" title={t('event.inbox')} aria-label={t('event.inbox')} onClick={() => useUI.getState().openRight({ kind: 'inbox' })} className="flex h-9 w-9 items-center justify-center rounded text-muted hover:bg-white/5 hover:text-ink md:hidden">
+          <Bell size={18} />
+        </button>
+        <button type="button" title={t('top.endTurn')} aria-label={t('top.endTurn')} onClick={() => useGame.getState().step()} className="flex h-9 items-center justify-center rounded border border-gold-2 bg-gold/90 px-3 text-[#1a1408] md:hidden">
+          <ArrowRight size={18} />
+        </button>
       </nav>
       {tab && (
-        <aside className="anim-in absolute bottom-0 left-11 top-0 z-20 flex w-[min(360px,calc(100vw-44px))] flex-col border-r border-line bg-panel/[0.97] shadow-2xl lg:relative lg:left-0">
+        <aside className="anim-in absolute bottom-12 left-0 top-0 z-20 flex w-[min(360px,100vw)] flex-col md:bottom-0 md:left-11 md:w-[min(360px,calc(100vw-44px))] border-r border-line bg-panel/[0.97] shadow-2xl lg:relative lg:left-0">
           <div className="flex items-center justify-between border-b border-line px-3 py-2">
             <h2 className="font-display text-base tracking-wide text-gold-soft">{t(TABS.find((x) => x.id === tab)?.label ?? `tab.${tab}`)}</h2>
             <button type="button" onClick={close} className="rounded p-1 text-muted hover:bg-white/5 hover:text-ink" aria-label={t('common.close')}>

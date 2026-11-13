@@ -13,6 +13,7 @@ import type { GameState, Tag, Terrain } from '@/game/types';
 import type { Ctx } from '@/game/ctx';
 import type { World } from '@/game/world';
 import { addArc, countryBorders, getLod, lodForScale, outline, type MapGeometry, type MapLod } from './geometry';
+import { perf } from '@/lib/perf';
 import { mute, rgbStr, type ProvinceColoring, type RGB } from './modes';
 import { armySize, atWar, isFriendly, REBEL_TAG } from '@/game/query';
 import { armyBaseSpeed, edgeDays } from '@/game/movement';
@@ -337,6 +338,7 @@ export class MapRenderer {
 
   // -------------------------------------------------------------------------
   draw(rctx: Ctx, coloring: ProvinceColoring, sel: Selection, hover: number, opts: RenderOptions, time: number) {
+    const t0 = performance.now();
     const s = rctx.s;
     const ctx = this.canvas.getContext('2d');
     if (!ctx) return;
@@ -354,7 +356,10 @@ export class MapRenderer {
         this.base.style.transform = `translate(${(bv.x - v.x) * v.scale}px, ${(bv.y - v.y) * v.scale}px) scale(${f})`;
         this.needsSettle = true;
       } else {
+        const tb = performance.now();
         this.renderBase(rctx, coloring, sel, opts);
+        perf.baseMs = performance.now() - tb;
+        perf.bases++;
         this.base.style.transform = '';
       }
     }
@@ -386,6 +391,8 @@ export class MapRenderer {
     this.drawArmies(ctx, rctx, sel, opts, time);
     this.drawBattles(ctx, rctx, sel, opts, time);
     MapRenderer.lastView = { ...this.view };
+    perf.drawMs = performance.now() - t0;
+    perf.draws++;
   }
 
   /** Arc / nehir / göl sınır kutuları (görünüm kırpması için bir kez hesaplanır) */

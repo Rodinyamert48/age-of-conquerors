@@ -1118,4 +1118,13 @@ export const en: Record<string, string> = {
   'online.countryUnavailable': 'This country can no longer be played',
   'online.countryTaken': 'This country is taken by another player',
   'peace.sentToPlayer': 'Peace offer sent to the other player',
+  'settings.colorBlind': 'Colour-blind palette',
+  'settings.colorBlindHint': 'Orange/blue instead of red/green; map colours are separated',
+  'settings.textSize': 'Text size',
+  'settings.text.normal': 'Normal',
+  'settings.text.large': 'Large',
+  'settings.text.xlarge': 'Extra large',
+  'pause.quickLoad': 'Quick load (F9)',
+  'pause.quickLoaded': 'Quick save loaded',
+  'pause.noQuickSave': 'No quick save found',
 };

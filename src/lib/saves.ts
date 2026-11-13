@@ -30,6 +30,8 @@ interface SaveData {
 }
 
 const AUTO_SLOTS = 3;
+/** hızlı kayıt yuvaları: en eskisinin üzerine yazılır */
+export const QUICK_SLOTS = 5;
 
 function metaOf(id: string, name: string, kind: SaveKind, state: GameState): SaveMeta {
   const c = state.countries[state.player];
@@ -55,8 +57,17 @@ function metaOf(id: string, name: string, kind: SaveKind, state: GameState): Sav
 export async function writeSave(state: GameState, kind: SaveKind, name?: string, id?: string): Promise<SaveMeta> {
   let saveId = id;
   if (!saveId) {
-    if (kind === 'quick') saveId = 'quick';
-    else if (kind === 'session') saveId = 'session';
+    if (kind === 'quick') {
+      const quicks = (await listSaves()).filter((m) => m.kind === 'quick').sort((a, b) => a.savedAt - b.savedAt);
+      const used = new Set(quicks.map((m) => m.id));
+      let slot = '';
+      for (let i = 1; i <= QUICK_SLOTS; i++)
+        if (!used.has(`quick-${i}`)) {
+          slot = `quick-${i}`;
+          break;
+        }
+      saveId = slot || quicks[0].id;
+    } else if (kind === 'session') saveId = 'session';
     else if (kind === 'auto') {
       const metas = await listSaves();
       const autos = metas.filter((m) => m.kind === 'auto').sort((a, b) => a.savedAt - b.savedAt);

@@ -18,7 +18,10 @@ export function notify(
 ): void {
   const s = ctx.s;
   const player = !!opts.involves?.includes(s.player);
-  if (!player && !opts.global) return;
+  // Çevrimiçi: başka bir insan oyuncuyu ilgilendiren bildirimler de saklanır (konuk kendi ekranında görür)
+  const multi = (s.humans?.length ?? 0) > 1;
+  const otherHuman = multi && !!opts.involves?.some((t) => s.humans!.includes(t));
+  if (!player && !opts.global && !otherHuman) return;
   // Tarihçe: oyuncuyu ilgilendiren savaş, barış ve kritik olaylar zaman çizelgesine yazılır
   if (player && (kind === 'war' || kind === 'peace' || key.startsWith('notif.election') || (opts.severity === 'critical' && kind !== 'battle'))) {
     (s.chronicle ??= []).push({ day: s.day, key, params, severity: opts.severity ?? 'info' });
@@ -33,6 +36,7 @@ export function notify(
     severity: opts.severity ?? 'info',
     focus: opts.focus,
     player,
+    ...(multi ? { tags: (opts.involves ?? []).filter((t) => s.humans!.includes(t)), priv: !opts.global } : {}),
   });
   if (s.notifications.length > MAX_NOTIFICATIONS) s.notifications.splice(0, s.notifications.length - MAX_NOTIFICATIONS);
 }

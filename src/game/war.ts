@@ -238,7 +238,7 @@ export function callToArms(ctx: Ctx, war: War, caller: Tag, ally: Tag): boolean 
   if (!s.countries[ally]?.alive) return false;
   const side = warSide(war, caller);
   if (!side) return false;
-  if (ally === s.player) {
+  if (s.countries[ally].isPlayer) {
     s.proposals.push({ id: newId(ctx, 'p'), from: caller, to: ally, type: 'callToArms', warId: war.id, day: s.day, expires: s.day + 30 });
     notify(ctx, 'diplomacy', 'notif.callToArms', { country: s.countries[caller].name, war: war.name }, { severity: 'info', involves: [ally] });
     return false;

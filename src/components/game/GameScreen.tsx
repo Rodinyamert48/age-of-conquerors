@@ -12,6 +12,7 @@ import RightPanel from './RightPanel';
 import PeaceDialog from './PeaceDialog';
 import AdminPanel from './AdminPanel';
 import Tutorial from './Tutorial';
+import ChatPanel from './ChatPanel';
 import MinisterDialog from './MinisterDialog';
 import { GameOverDialog, HoverTooltip, MapModeBar, NotificationLog, PauseMenu } from './Overlays';
 import { useCommand, useReadCtx } from './hooks';
@@ -253,6 +254,7 @@ export default function GameScreen() {
       <NotificationLog />
       <PeaceDialog />
       <MinisterDialog />
+      <ChatPanel />
       <PauseMenu />
       <GameOverDialog />
     </div>

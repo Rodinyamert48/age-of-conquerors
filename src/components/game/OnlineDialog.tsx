@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { Copy, Globe, Users } from 'lucide-react';
+import { Copy, Globe, Link2, Users } from 'lucide-react';
 import { useGame } from '@/store/game';
 import { useOnline } from '@/store/online';
 import { useT, useLang } from '@/i18n';
@@ -26,6 +26,8 @@ export function OnlineHostDialog({ open, onClose }: { open: boolean; onClose: ()
   const state = useGame((s) => s.state);
   const ctx = useReadCtx();
   const seats = useOnline((s) => s.seats);
+  const turnLimit = useOnline((s) => s.turnLimit);
+  const roomError = useOnline((s) => s.roomError);
   const push = useToasts((s) => s.push);
   const [tag, setTag] = useState('');
   const [busy, setBusy] = useState(false);
@@ -72,7 +74,29 @@ export function OnlineHostDialog({ open, onClose }: { open: boolean; onClose: ()
           >
             <Users size={14} /> {t('online.invite')}
           </Button>
+          <Button
+            disabled={!tag}
+            title={t('online.linkHint')}
+            onClick={() => {
+              copy(useOnline.getState().roomLink(tag));
+              setTag('');
+            }}
+          >
+            <Link2 size={14} /> {t('online.copyLink')}
+          </Button>
         </div>
+        <p className="text-[11px] text-muted">{t('online.linkHint')}</p>
+        {roomError && <p className="text-[11px] text-danger">{t('online.signalError')}</p>}
+        <label className="flex items-center justify-between gap-2 rounded border border-line bg-panel-2 px-2.5 py-2 text-xs">
+          <span className="text-muted">{t('online.turnLimit')}</span>
+          <select value={turnLimit} onChange={(e) => useOnline.getState().setTurnLimit(Number(e.target.value))} className="rounded border border-line-2 bg-bg-2 px-2 py-1">
+            {[0, 30, 60, 90, 120, 180, 300, 600].map((sec) => (
+              <option key={sec} value={sec}>
+                {sec === 0 ? t('online.noLimit') : t('online.seconds', { n: sec })}
+              </option>
+            ))}
+          </select>
+        </label>
         {seats.map((s) => (
           <div key={s.id} className="rounded border border-line bg-panel-2 p-2.5">
             <div className="flex items-center gap-2">
@@ -80,7 +104,7 @@ export function OnlineHostDialog({ open, onClose }: { open: boolean; onClose: ()
               <span className="flex-1 text-ink">{lang === 'en' ? state.countries[s.tag]?.nameEn : state.countries[s.tag]?.name}</span>
               <span className={s.status === 'connected' ? 'text-good' : s.status === 'closed' ? 'text-danger' : 'text-warn'}>{t(`online.status.${s.status}`)}</span>
             </div>
-            {s.status === 'waiting' && (
+            {s.status === 'waiting' && s.offer && (
               <>
                 <div className="mt-2 text-[11px] text-muted">{t('online.step1')}</div>
                 <div className="flex gap-1.5">

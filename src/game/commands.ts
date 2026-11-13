@@ -271,6 +271,7 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
       return ok({ accepted: r.accepted, evaluation: r.evaluation });
     }
     case 'answerProposal': {
+      if (s.proposals.find((p) => p.id === cmd.id)?.to !== me) return fail('err.notFound');
       const r = answerProposal(ctx, cmd.id, cmd.accept);
       return r.ok ? ok({ accepted: r.accepted }) : fail(r.error ?? 'err.unknown');
     }
@@ -302,6 +303,12 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
       const loser = cmd.beneficiary === me ? cmd.target : me;
       for (const t of cmd.terms) if (!validTerm(ctx, war, cmd.beneficiary, loser, t)) return fail('peace.invalidTerms');
       const separate = !(iAmLeader && theyLead);
+      // İnsan oyuncuya teklif: kararı kendisi verir (çevrimiçi)
+      if (s.countries[cmd.target]?.isPlayer) {
+        s.peaceOffers = s.peaceOffers.filter((o) => !(o.from === me && o.to === cmd.target && o.warId === war.id));
+        s.peaceOffers.push({ id: `po${s.nextId++}`, warId: war.id, from: me, to: cmd.target, beneficiary: cmd.beneficiary, terms: cmd.terms, day: s.day, expires: s.day + 30 });
+        return ok({ accepted: false, sent: true, counter: null, reason: 'peace.sentToPlayer' });
+      }
       const ev = evaluatePeace(ctx, war, me, cmd.target, cmd.beneficiary, cmd.terms);
       if (ev.accept) {
         applyPeace(ctx, war, cmd.beneficiary, loser, cmd.terms, separate);
@@ -311,7 +318,7 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
     }
     case 'answerPeace': {
       const offer = s.peaceOffers.find((o) => o.id === cmd.id);
-      if (!offer) return fail('err.notFound');
+      if (!offer || offer.to !== me) return fail('err.notFound');
       s.peaceOffers = s.peaceOffers.filter((o) => o !== offer);
       const war = s.wars[offer.warId];
       if (!war) return fail('err.notFound');
@@ -330,6 +337,7 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
       return ok(r);
     }
     case 'resolveEvent': {
+      if (s.pendingEvents.find((p) => p.uid === cmd.uid)?.country !== me) return fail('err.notFound');
       return resolvePendingEvent(ctx, cmd.uid, cmd.option) ? ok() : fail('err.notFound');
     }
     case 'acknowledgeGameOver': {

@@ -13,7 +13,8 @@ export type NetMessage =
   | { t: 'cmd'; id: number; cmd: unknown }
   | { t: 'result'; id: number; result: unknown }
   | { t: 'ready'; on: boolean }
-  | { t: 'readyList'; tags: string[]; humans: string[] }
+  | { t: 'readyList'; tags: string[]; humans: string[]; limit: number; left: number }
+  | { t: 'chat'; from: string; to: string | null; text: string; at: number }
   | { t: 'bye' };
 
 export function encodeCode(desc: RTCSessionDescriptionInit): string {

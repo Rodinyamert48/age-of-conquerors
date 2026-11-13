@@ -13,6 +13,7 @@ import type { Command } from '@/game/commands';
 import type { NewGameOptions } from '@/game/engine';
 import type { FromWorker, ToWorker, Upcoming } from '@/worker/protocol';
 import type { SaveKind } from '@/lib/saves';
+import { viewFor } from '@/game/view';
 import { useSettings } from './settings';
 import { dateFromDay } from '@/game/calendar';
 import { playDrums, playFanfare, playSound } from '@/lib/audio';
@@ -27,6 +28,8 @@ interface GameStore {
   worldData: WorldData | null;
   geo: GeoData | null;
   state: GameState | null;
+  /** çevrimiçi oda sahibi: süzülmemiş tam durum (konuklara gönderilir) */
+  rawState: GameState | null;
   upcoming: Upcoming[];
   playing: boolean;
   /** tur hesaplanıyor */
@@ -143,6 +146,7 @@ export const useGame = create<GameStore>()((set, get) => ({
   worldData: null,
   geo: null,
   state: null,
+  rawState: null,
   upcoming: [],
   playing: false,
   busy: false,
@@ -262,7 +266,8 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
   switch (msg.type) {
     case 'state': {
       const prev = store.state;
-      useGame.setState({ state: msg.state, upcoming: msg.upcoming, playing: msg.playing, turnMs: msg.turnMs, ...(msg.reason === 'turn' || msg.reason === 'new' || msg.reason === 'load' ? { busy: false } : {}) });
+      const multi = net?.role === 'host' && (msg.state.humans?.length ?? 0) > 1;
+      useGame.setState({ state: multi ? viewFor(msg.state, msg.state.player) : msg.state, rawState: multi ? msg.state : null, upcoming: msg.upcoming, playing: msg.playing, turnMs: msg.turnMs, ...(msg.reason === 'turn' || msg.reason === 'new' || msg.reason === 'load' ? { busy: false } : {}) });
       if (pendingState && (msg.reason === 'new' || msg.reason === 'load')) {
         pendingState.resolve();
         pendingState = null;
@@ -359,3 +364,5 @@ if (typeof document !== 'undefined') {
   });
   window.addEventListener('pagehide', writeSession);
 }
+
+export { viewFor };

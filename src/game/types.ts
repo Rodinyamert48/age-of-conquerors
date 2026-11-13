@@ -510,6 +510,9 @@ export interface GameNotification {
   focus?: { province?: number; army?: string; war?: string; battle?: string; country?: Tag };
   /** oyuncuyu ilgilendiriyor mu */
   player: boolean;
+  /** çevrimiçi: bildirimin ilgilendirdiği insan oyuncular; priv: yalnızca onlara gösterilir */
+  tags?: Tag[];
+  priv?: boolean;
 }
 
 export interface PendingEvent {

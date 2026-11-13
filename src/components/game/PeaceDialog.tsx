@@ -100,8 +100,12 @@ export default function PeaceDialog() {
   const send = async (useTerms: PeaceTerm[]) => {
     const r = await cmd({ type: 'proposePeace', war: war.id, target: counterpart, beneficiary, terms: useTerms });
     if (!r.ok) return;
-    const d = r.data as { accepted: boolean; counter: PeaceTerm[] | null; reason: string };
-    if (d.accepted) {
+    const d = r.data as { accepted: boolean; counter: PeaceTerm[] | null; reason: string; sent?: boolean };
+    if (d.sent) {
+      push(t('peace.sentToPlayer'), 'info');
+      close();
+      reset();
+    } else if (d.accepted) {
       push(t('peace.accepted'), 'good');
       close();
       reset();

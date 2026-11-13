@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, Loader2, Menu, Swords, Coins, Users, Scale, Bell, CalendarClock, Flame } from 'lucide-react';
 import { useGame } from '@/store/game';
 import { useUI } from '@/store/ui';
@@ -20,6 +20,14 @@ export default function TopBar() {
   const upcoming = useGame((s) => s.upcoming);
   const turnMs = useGame((s) => s.turnMs);
   const online = useOnline();
+  const [now, setNow] = useState(0);
+  const deadline = online.deadline;
+  useEffect(() => {
+    if (!deadline) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [deadline]);
+  const secsLeft = deadline && now ? Math.max(0, Math.ceil((deadline - now) / 1000)) : null;
   const ctx = useReadCtx();
   const ui = useUI();
   const [tip, setTip] = useState<'budget' | 'stability' | 'upcoming' | null>(null);
@@ -128,6 +136,7 @@ export default function TopBar() {
           <span className="whitespace-nowrap font-display text-[13px] tabular text-ink sm:text-[15px]">{formatDate(state.day, lang)}</span>
           <span className="text-[9px] tracking-[0.2em] text-gold/80">{t('top.turn', { n: state.turn + 1 })}</span>
         </div>
+        {secsLeft !== null && <span className={`tabular rounded border px-1.5 py-0.5 text-xs ${secsLeft <= 10 ? 'border-danger text-danger' : 'border-line-2 text-gold-soft'}`} title={t('online.turnLimit')}>⏱ {secsLeft}</span>}
         {/* Age of History 2 gibi: her basış tek tur (kısayol: Boşluk) */}
         <button
           type="button"

@@ -18,6 +18,16 @@ export default function OnlinePage() {
   const [answer, setAnswer] = useState('');
   const [busy, setBusy] = useState(false);
   const role = useOnline((s) => s.role);
+  const error = useOnline((s) => s.error);
+  // Oda linki: ?room=…&tag=… ile gelen oyuncu tek tıkla katılır
+  const [link] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const q = new URLSearchParams(window.location.search);
+    const room = q.get('room');
+    const tag = q.get('tag');
+    return room && tag && /^[a-z0-9]{6,20}$/.test(room) && /^[A-Z0-9_]{2,6}$/.test(tag) ? { room, tag } : null;
+  });
+  const [joining, setJoining] = useState(false);
   const hasState = useGame((s) => !!s.state);
   useEffect(() => {
     if (role === 'guest' && hasState) router.push('/play');
@@ -25,6 +35,32 @@ export default function OnlinePage() {
   return (
     <MenuFrame title={t('online.join')}>
       <div className="space-y-3 text-sm text-ink-2">
+        {link && (
+          <section className="rounded border border-gold-2/60 bg-panel/90 p-4">
+            <p className="text-xs text-muted">{t('online.linkJoinHelp', { tag: link.tag })}</p>
+            <label className="mt-3 block text-xs text-muted">{t('online.yourName')}</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded border border-line-2 bg-bg-2 px-2 py-1.5" />
+            <Button
+              className="mt-2"
+              variant="primary"
+              disabled={joining && !error}
+              onClick={async () => {
+                setJoining(true);
+                try {
+                  await useGame.getState().init();
+                  await useOnline.getState().joinRoom(link.room, link.tag, name.trim() || 'Oyuncu');
+                } catch (e) {
+                  push(e instanceof Error ? e.message : String(e), 'bad');
+                  setJoining(false);
+                }
+              }}
+            >
+              {t('online.joinNow')}
+            </Button>
+            {joining && !error && <p className="mt-2 text-xs text-warn">{t('online.connecting')}</p>}
+            {error && <p className="mt-2 text-xs text-danger">{t(error)}</p>}
+          </section>
+        )}
         <section className="rounded border border-line bg-panel/90 p-4">
           <p className="text-xs text-muted">{t('online.joinHelp')}</p>
           <label className="mt-3 block text-xs text-muted">{t('online.yourName')}</label>

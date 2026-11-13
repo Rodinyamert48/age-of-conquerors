@@ -6,7 +6,7 @@ import { useT, useLang } from '@/i18n';
 import { Bar, Button, Flag, Modal, Segmented, useToasts } from '@/components/ui';
 import { useCommand, useReadCtx, useCountryName } from './hooks';
 import { provincesOf } from '@/game/ctx';
-import { evaluatePeace, scoreFor, termCost, termsCost, validTerm } from '@/game/war';
+import { conferenceDemands, evaluatePeace, scoreFor, termCost, termsCost, validTerm } from '@/game/war';
 import { warSide } from '@/game/query';
 import type { PeaceTerm, Tag } from '@/game/types';
 import { formatMoney } from '@/lib/format';
@@ -29,6 +29,8 @@ export default function PeaceDialog() {
   const [mode, setMode] = useState<Mode>('demand');
   const [provs, setProvs] = useState<number[]>([]);
   const [gives, setGives] = useState<number[]>([]);
+  /** barış konferansı: müttefikin istediği bölgeyi kendimize alıyorsak true */
+  const [keep, setKeep] = useState<Record<number, boolean>>({});
   const [rep, setRep] = useState({ on: false, amount: 0, months: 60 });
   const [release, setRelease] = useState<Tag[]>([]);
   const [vassal, setVassal] = useState(false);
@@ -62,17 +64,22 @@ export default function PeaceDialog() {
     return { provinces: list.slice(0, 80), gives: giveList.slice(0, 120), nations: [...nations].filter((n) => validTerm(ctx, war, beneficiary, loser, { type: 'release', nation: n })) };
   }, [ctx, war, loser, beneficiary, mode]);
 
+  const demands = useMemo(() => (ctx && war && loser && beneficiary === me ? conferenceDemands(ctx, war, me, loser) : new Map<number, Tag>()), [ctx, war, loser, beneficiary, me]);
+
   const terms: PeaceTerm[] = useMemo(() => {
     if (mode === 'white') return [];
     const out: PeaceTerm[] = [];
     if (annex) return [{ type: 'annex' }];
-    for (const p of provs) out.push({ type: 'province', province: p });
+    for (const p of provs) {
+      const ally = demands.get(p);
+      out.push(ally && !keep[p] ? { type: 'province', province: p, to: ally } : { type: 'province', province: p });
+    }
     for (const p of gives) out.push({ type: 'give', province: p });
     if (rep.on && rep.amount > 0) out.push({ type: 'reparations', amount: rep.amount, months: rep.months });
     for (const n of release) out.push({ type: 'release', nation: n });
     if (vassal) out.push({ type: 'vassalize' });
     return out;
-  }, [mode, provs, gives, rep, release, vassal, annex]);
+  }, [mode, provs, gives, rep, release, vassal, annex, demands, keep]);
 
   if (!peace || !war || !state || !ctx || !counterpart || !beneficiary || !loser) return null;
   const myScore = scoreFor(war, me);
@@ -156,6 +163,7 @@ export default function PeaceDialog() {
               <div>
                 <div className="mb-1 text-xs uppercase tracking-[0.15em] text-gold-soft">{t('peace.province')}</div>
                 {candidates.provinces.length === 0 && <p className="text-xs text-muted">{t('peace.occupiedOnly')}</p>}
+                {demands.size > 0 && <p className="mb-1 text-[11px] text-warn">{t('peace.conference')}: {t('peace.conferenceHint')}</p>}
                 <div className="grid max-h-52 grid-cols-1 gap-0.5 overflow-y-auto sm:grid-cols-2">
                   {candidates.provinces.map((p) => {
                     const c = termCost(ctx, war, beneficiary, loser, { type: 'province', province: p });
@@ -166,6 +174,19 @@ export default function PeaceDialog() {
                           <input type="checkbox" checked={on} disabled={annex} onChange={() => setProvs(on ? provs.filter((x) => x !== p) : [...provs, p])} />
                           <span className="truncate">{lang === 'en' ? ctx.w.data.provinces[p].nameEn : ctx.w.data.provinces[p].name}</span>
                         </span>
+                        {demands.has(p) && on && (
+                          <button
+                            type="button"
+                            title={t('peace.demands', { ally: state.countries[demands.get(p)!]?.name ?? '' })}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setKeep({ ...keep, [p]: !keep[p] });
+                            }}
+                            className={`shrink-0 rounded px-1 text-[10px] ${keep[p] ? 'bg-danger/25 text-danger' : 'bg-good/20 text-good'}`}
+                          >
+                            → {keep[p] ? state.countries[me]?.name : state.countries[demands.get(p)!]?.name}
+                          </button>
+                        )}
                         <span className="tabular text-muted">{c.toFixed(1)}</span>
                       </label>
                     );

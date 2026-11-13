@@ -40,6 +40,8 @@ export function zeroModifiers(): Modifiers {
     researchSpeed: 0,
     warExhaustion: 0,
     development: 0,
+    spyPower: 0,
+    spyDefense: 0,
   };
 }
 

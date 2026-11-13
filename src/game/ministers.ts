@@ -8,8 +8,8 @@ import type { Day, Modifiers, Tag } from './types';
 import { hashString, seededValue } from './rng';
 import { REBEL_TAG } from './query';
 
-export type MinisterRole = 'interior' | 'foreign' | 'defense' | 'education' | 'staff' | 'health' | 'finance';
-export const MINISTER_ROLES: MinisterRole[] = ['interior', 'foreign', 'defense', 'education', 'staff', 'health', 'finance'];
+export type MinisterRole = 'interior' | 'foreign' | 'defense' | 'education' | 'staff' | 'health' | 'finance' | 'intelligence';
+export const MINISTER_ROLES: MinisterRole[] = ['interior', 'foreign', 'defense', 'education', 'staff', 'health', 'finance', 'intelligence'];
 
 export interface MinisterTrait {
   id: string;
@@ -70,6 +70,12 @@ export const MINISTER_TRAITS: Record<MinisterRole, MinisterTrait[]> = {
     T('banker', 'Bankacı', 'Banker', { tradeIncome: 0.1, productionIncome: 0.05 }, { stability: -2 }),
     T('austerity', 'Kemer Sıkıcı', 'Austerity Hawk', { upkeep: -0.08, taxEfficiency: 0.04 }, { stability: -3, unrest: 3 }),
   ],
+  intelligence: [
+    T('spymaster', 'Casus Ustası', 'Spymaster', { spyPower: 0.3 }, { spyDefense: -0.1 }),
+    T('counterspy', 'Karşı Casusluk Uzmanı', 'Counter-Intelligence Expert', { spyDefense: 0.35 }, { spyPower: -0.1 }),
+    T('watcher', 'Gözetimci', 'Watchman', { spyDefense: 0.2, unrest: -2 }, { stability: -2 }),
+    T('saboteur', 'Sabotajcı', 'Saboteur', { spyPower: 0.2, siegeSpeed: 0.1 }, { relationGain: -0.1 }),
+  ],
 };
 
 export const MINISTER_ROLE_NAMES: Record<MinisterRole, { tr: string; en: string }> = {
@@ -80,6 +86,7 @@ export const MINISTER_ROLE_NAMES: Record<MinisterRole, { tr: string; en: string 
   staff: { tr: 'Genelkurmay Başkanı', en: 'Chief of the General Staff' },
   health: { tr: 'Sağlık Bakanı', en: 'Health Minister' },
   finance: { tr: 'Maliye Bakanı', en: 'Finance Minister' },
+  intelligence: { tr: 'İstihbarat Başkanı', en: 'Intelligence Chief' },
 };
 
 const FIRST = ['Ahmet', 'Mehmet', 'Ali', 'Murat', 'Kemal', 'Selim', 'Hasan', 'Emre', 'Ayşe', 'Fatma', 'Zeynep', 'Elif', 'Leyla', 'Nadia', 'Omar', 'Karim', 'Viktor', 'Ivan', 'Dmitri', 'Elena', 'Anna', 'Maria', 'John', 'Michael', 'David', 'Thomas', 'Sarah', 'Emma', 'Hans', 'Klaus', 'Pierre', 'Jean', 'Marco', 'Luca', 'Carlos', 'Diego', 'Hiroshi', 'Kenji', 'Wei', 'Chen', 'Raj', 'Arjun', 'Priya', 'Kofi', 'Amara', 'Tariq', 'Yusuf', 'Sofia'];

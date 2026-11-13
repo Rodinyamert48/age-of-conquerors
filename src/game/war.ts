@@ -14,7 +14,7 @@ import {
   warsOf,
   type Ctx,
 } from './ctx';
-import { addRelation, atWar, enemiesIn, isFriendly, overlordOf, relation, REBEL_TAG, setRelation, vassalsOf, warSide } from './query';
+import { addRelation, alliesIn, atWar, enemiesIn, isFriendly, overlordOf, relation, REBEL_TAG, setRelation, vassalsOf, warSide } from './query';
 import { notify, newId } from './notify';
 import { BAL } from './balance';
 import { nearestFriendlyProvince } from './movement';
@@ -23,6 +23,7 @@ import { monthsCrossed, yearsBetween } from './calendar';
 // ---------------------------------------------------------------------------
 // Yardımcılar
 // ---------------------------------------------------------------------------
+import { addGrievance, grievanceOf } from './espionage';
 export function provinceValue(ctx: Ctx, p: number): number {
   const s = ctx.s;
   const ps = s.provinces[p];
@@ -76,11 +77,40 @@ export function hasClaimOrCore(ctx: Ctx, tag: Tag, p: number): boolean {
   return !!c && (c.claims.includes(p) || ctx.s.provinces[p].cores.includes(tag));
 }
 
-/** Saldıranın haklı gerekçesi var mı (talep veya çekirdek bölge) */
+export type CasusBelli = 'core' | 'claim' | 'treaty' | 'spy' | 'embargo' | 'ally' | 'hostile';
+
+/** Saldıranın haklı savaş gerekçeleri (boşsa savaş sebepsizdir: itibar ve istikrar cezası) */
+export function casusBelli(ctx: Ctx, attacker: Tag, defender: Tag): CasusBelli[] {
+  const s = ctx.s;
+  const out: CasusBelli[] = [];
+  const ac = s.countries[attacker];
+  let core = false;
+  let claim = false;
+  for (const p of provincesOf(ctx, defender)) {
+    if (s.provinces[p].cores.includes(attacker)) core = true;
+    else if (ac?.claims.includes(p)) claim = true;
+  }
+  if (core) out.push('core');
+  if (claim) out.push('claim');
+  const g = grievanceOf(ctx, attacker, defender);
+  if (g) out.push(g);
+  // Müttefik savunması: hedef, müttefikimizle/paktımız olan ülkeyle savaşta
+  for (const w of Object.values(s.wars)) {
+    const side = warSide(w, defender);
+    if (!side || warSide(w, attacker)) continue;
+    const foes = side === 'attackers' ? w.defenders : w.attackers;
+    if (foes.some((f) => f !== REBEL_TAG && (isFriendly(ctx, attacker, f) || !!findTreaty(ctx, 'defensive', attacker, f)))) {
+      out.push('ally');
+      break;
+    }
+  }
+  // Sürekli düşmanca ilişki de gerekçe sayılır
+  if (relation(s, attacker, defender) <= -75) out.push('hostile');
+  return out;
+}
+
 export function hasCasusBelli(ctx: Ctx, attacker: Tag, defender: Tag): boolean {
-  for (const p of provincesOf(ctx, defender)) if (hasClaimOrCore(ctx, attacker, p)) return true;
-  // Sürekli düşmanca ilişki (çok kötü ilişkiler) de gerekçe sayılır
-  return relation(ctx.s, attacker, defender) <= -75;
+  return casusBelli(ctx, attacker, defender).length > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,6 +165,8 @@ export function declareWar(ctx: Ctx, attacker: Tag, defender: Tag, goal: WarGoal
       a.reputation = Math.max(-100, a.reputation - 30);
       a.stability = Math.max(0, a.stability - 15);
     }
+    // Antlaşmayı bozan taraf, mağdura haklı savaş gerekçesi verir
+    if (t.type === 'nap' || t.type === 'truce') addGrievance(ctx, defender, attacker, 'treaty');
   }
   if (chk.breaks.length) removeTreaties(ctx, (t) => chk.breaks.includes(t));
   if (!chk.justified && goal.type !== 'rebellion' && goal.type !== 'independence' && goal.type !== 'scenario') {
@@ -364,6 +396,7 @@ export function validTerm(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, term
       // Başkent ancak işgal edilmişse alınabilir
       return enemiesIn(war, loser).includes(ps.controller);
     }
+    if (term.to && term.to !== beneficiary && (!alliesIn(war, beneficiary).includes(term.to) || !s.countries[term.to]?.alive || term.to === REBEL_TAG)) return false;
     return enemiesIn(war, loser).includes(ps.controller) || hasClaimOrCore(ctx, beneficiary, term.province);
   }
   if (term.type === 'give') {
@@ -498,16 +531,38 @@ export function reviveCountry(ctx: Ctx, tag: Tag): void {
   }
 }
 
+/**
+ * Barış konferansı: kazanan taraftaki müttefikler, kendi işgal ettikleri bölgeleri ister.
+ * Dönen harita: bölge → talep eden müttefik.
+ */
+export function conferenceDemands(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag): Map<number, Tag> {
+  const out = new Map<number, Tag>();
+  const allies = alliesIn(war, beneficiary);
+  for (const p of provincesOf(ctx, loser)) {
+    const ctrl = ctx.s.provinces[p].controller;
+    if (ctrl !== beneficiary && ctrl !== REBEL_TAG && allies.includes(ctrl) && ctx.s.countries[ctrl]?.alive) out.set(p, ctrl);
+  }
+  return out;
+}
+
 /** Barışı uygula. separate=true: yalnızca beneficiary ile loser arasında ayrı barış. */
 export function applyPeace(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, terms: PeaceTerm[], separate: boolean): void {
   const s = ctx.s;
   const bc = s.countries[beneficiary];
+  const demands = conferenceDemands(ctx, war, beneficiary, loser);
+  const snubbed = new Map<Tag, number>();
+  const granted = new Set<Tag>();
   for (const t of terms) {
     if (!validTerm(ctx, war, beneficiary, loser, t)) continue;
     switch (t.type) {
-      case 'province':
-        transferProvince(ctx, t.province, beneficiary);
+      case 'province': {
+        const to = t.to ?? beneficiary;
+        const wanted = demands.get(t.province);
+        if (wanted && wanted !== to) snubbed.set(wanted, (snubbed.get(wanted) ?? 0) + 1);
+        if (to !== beneficiary) granted.add(to);
+        transferProvince(ctx, t.province, to);
         break;
+      }
       case 'give':
         transferProvince(ctx, t.province, loser);
         break;
@@ -553,6 +608,17 @@ export function applyPeace(ctx: Ctx, war: War, beneficiary: Tag, loser: Tag, ter
   invalidateDiplomacy(ctx);
   expelForeignArmies(ctx);
 
+  // Konferans sonucu: payını alamayan müttefik küser, alan memnun olur
+  for (const [ally, n] of snubbed) {
+    if (!s.countries[ally]?.alive) continue;
+    addRelation(s, ally, beneficiary, -Math.min(40, 10 * n));
+    notify(ctx, 'diplomacy', 'notif.conferenceSnub', { ally: s.countries[ally].name, winner: bc?.name ?? beneficiary, n }, { severity: 'bad', involves: [ally, beneficiary], focus: { country: ally === s.player ? beneficiary : ally } });
+  }
+  for (const ally of granted) {
+    if (!s.countries[ally]?.alive || snubbed.has(ally)) continue;
+    addRelation(s, ally, beneficiary, 8);
+    notify(ctx, 'diplomacy', 'notif.conferenceShare', { ally: s.countries[ally].name, winner: bc?.name ?? beneficiary }, { severity: 'good', involves: [ally, beneficiary] });
+  }
   const termsDesc = terms.length ? terms.length : 0;
   notify(
     ctx,

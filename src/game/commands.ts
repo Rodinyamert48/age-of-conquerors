@@ -10,6 +10,7 @@ import { armySize, atWar, warSide, REBEL_TAG } from './query';
 import { availableTechs, buildingAvailability, cancelConstruction, canResearch, createArmy, mergeInto, startConstruction, startRecruit, techCost } from './construction';
 import { TECHS } from './defs/techs';
 import { startAssimilation } from './assimilation';
+import { spyOperation, type SpyOp } from './espionage';
 import { aiNuclear, buildNuke, launchNuke } from './nuclear';
 import { appointMinisters, ministersDue, type MinisterRole } from './ministers';
 import { BUILDING_DEFS } from './defs/buildings';
@@ -49,6 +50,7 @@ export type Command =
   | { type: 'switchCountry'; tag: Tag }
   | { type: 'setTimeStep'; step: TimeStep }
   | { type: 'assimilate'; province: number }
+  | { type: 'spy'; op: SpyOp; target: Tag }
   | { type: 'appointMinisters'; picks: Partial<Record<MinisterRole, number>> }
   | { type: 'buildNuke' }
   | { type: 'launchNuke'; province: number }
@@ -347,6 +349,10 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
       if (!ministersDue(ctx, me)) return fail('minister.notDue');
       appointMinisters(ctx, me, cmd.picks);
       return ok();
+    }
+    case 'spy': {
+      const r = spyOperation(ctx, me, cmd.target, cmd.op);
+      return r.ok ? ok({ success: r.success }) : fail(r.error ?? 'err.unknown');
     }
     case 'assimilate': {
       const r = startAssimilation(ctx, me, cmd.province);

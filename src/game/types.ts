@@ -144,6 +144,10 @@ export interface Modifiers {
   researchSpeed: number;
   warExhaustion: number;
   development: number;
+  /** casus ağı kurma/operasyon gücü */
+  spyPower: number;
+  /** karşı istihbarat */
+  spyDefense: number;
 }
 
 export interface TempModifier {
@@ -229,7 +233,9 @@ export interface Country {
   /** nükleer başlık sayısı */
   nukes?: number;
   /** bakanlar (yedi bakanlık) ve atama bilgisi */
-  ministers?: Partial<Record<'interior' | 'foreign' | 'defense' | 'education' | 'staff' | 'health' | 'finance', { name: string; trait: string }>>;
+  ministers?: Partial<Record<'interior' | 'foreign' | 'defense' | 'education' | 'staff' | 'health' | 'finance' | 'intelligence', { name: string; trait: string }>>;
+  /** casus ağları: hedef ülke → ağ gücü (0..100) */
+  spies?: Record<Tag, number>;
   ministerRound?: number;
   ministerNext?: Day;
   /** Toprak talepleri (bölge indeksleri) */
@@ -393,7 +399,9 @@ export type TreatyType =
   | 'access'
   | 'vassal'
   | 'truce'
-  | 'reparations';
+  | 'reparations'
+  /** ambargo: a uygulayan, b hedef */
+  | 'embargo';
 
 export interface Treaty {
   id: string;
@@ -426,6 +434,9 @@ export type DiploActionType =
   | 'vassalize'
   | 'recognize'
   | 'claim'
+  | 'embargo'
+  | 'liftEmbargo'
+  | 'sanction'
   | 'cedeProvince'
   | 'requestProvince'
   | 'annexVassal'
@@ -446,7 +457,8 @@ export interface DiploProposal {
 }
 
 export type PeaceTerm =
-  | { type: 'province'; province: number }
+  /** to: barış konferansında bölgeyi alacak müttefik (yoksa yararlanan taraf) */
+  | { type: 'province'; province: number; to?: Tag }
   /** karşılığında verilen bölge: yararlanan tarafın bölgesi karşı tarafa geçer (takas) */
   | { type: 'give'; province: number }
   | { type: 'reparations'; amount: number; months: number }
@@ -560,6 +572,8 @@ export interface GameState {
   meta: GameMeta;
   rules: GameRules;
   player: Tag;
+  /** haklı savaş gerekçeleri: 'MAĞDUR|SUÇLU' → gerekçenin bittiği gün ve türü */
+  grievances?: Record<string, { until: Day; kind: 'treaty' | 'spy' | 'embargo' }>;
   /** Çevrimiçi oyunda insan oyuncuların ülkeleri (oda sahibi dahil) */
   humans?: Tag[];
   day: Day;

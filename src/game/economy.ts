@@ -292,6 +292,14 @@ export function computeAllBudgets(ctx: Ctx): void {
     tradePartners.get(t.b)!.push(t.a);
   }
 
+  const embargoWeight = new Map<Tag, number>();
+  let worldOut = 0;
+  for (const v of outputs.values()) worldOut += v;
+  for (const t of s.treaties) {
+    if (t.type !== 'embargo' || worldOut <= 0) continue;
+    add(embargoWeight, t.b, (outputs.get(t.a) ?? 0) / worldOut);
+    add(embargoWeight, t.a, ((outputs.get(t.b) ?? 0) / worldOut) * 0.4);
+  }
   // Kaynak dengeleri (ön hesap: kim fazla veriyor)
   const surplus = new Map<Tag, Record<ResourceId, boolean>>();
   for (const [tag, r] of res) {
@@ -313,6 +321,9 @@ export function computeAllBudgets(ctx: Ctx): void {
     const nTrade = tradeCount.get(tag) ?? 0;
     const agreementTrade = (tradeAg.get(tag) ?? 0) * Math.sqrt(8 / Math.max(8, nTrade));
     b.trade = (((tradeBase.get(tag) ?? 0) + agreementTrade) * Math.max(0, 1 + mods.tradeIncome)) / 12;
+    // Ambargo: uygulayanların ekonomik ağırlığı kadar ticaret kaybı (uygulayan da küçük bir bedel öder)
+    const emb = embargoWeight.get(tag);
+    if (emb) b.trade *= Math.max(0.15, 1 - 2.5 * emb);
 
     // Kaynaklar
     const r = res.get(tag) ?? { prod: { food: 0, iron: 0, coal: 0, timber: 0 }, cons: { food: 0, iron: 0, coal: 0, timber: 0 } };

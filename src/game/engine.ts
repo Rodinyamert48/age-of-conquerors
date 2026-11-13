@@ -8,6 +8,7 @@
  *   4. Nüfus, insan gücü, ikmal  9. Zafer/yenilgi koşulları
  *   5. Diplomatik süreler        10. Tarih ve tur sayacı
  */
+import { espionageTick } from './espionage';
 import type { Country, Difficulty, GameRules, GameState, PolicyId, Tag, TimeStep, VictoryRules } from './types';
 import { POLICY_IDS, RESOURCE_IDS } from './types';
 import type { World } from './world';
@@ -393,7 +394,10 @@ export function advanceTurn(ctx: Ctx): void {
   warTick(ctx, dt, monthChanged);
   s.proposals = s.proposals.filter((p) => p.expires > newDay);
   s.peaceOffers = s.peaceOffers.filter((p) => p.expires > newDay && s.wars[p.warId]);
-  if (monthChanged) relationTick(ctx);
+  if (monthChanged) {
+    relationTick(ctx);
+    espionageTick(ctx);
+  }
   // 6. İnşaat, asker toplama, araştırma
   ministerTick(ctx);
   constructionTick(ctx, dt);

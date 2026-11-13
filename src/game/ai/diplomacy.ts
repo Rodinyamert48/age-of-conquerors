@@ -193,7 +193,9 @@ function demandTerms(ctx: Ctx, war: War, winner: Tag, loser: Tag, budget: number
   });
   let used = 0;
   for (const p of occupied) {
-    const t: PeaceTerm = { type: 'province', province: p };
+    // Konferans: müttefikin işgal ettiği bölge müttefike bırakılır
+    const ctrl = s.provinces[p].controller;
+    const t: PeaceTerm = ctrl !== winner && s.countries[ctrl]?.alive ? { type: 'province', province: p, to: ctrl } : { type: 'province', province: p };
     if (!validTerm(ctx, war, winner, loser, t)) continue;
     const cost = termCost(ctx, war, winner, loser, t);
     if (used + cost > budget) continue;

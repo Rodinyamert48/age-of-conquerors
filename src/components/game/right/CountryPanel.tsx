@@ -10,7 +10,9 @@ import { countrySummary } from '@/game/selectors';
 import { evaluateProposal, improveCost } from '@/game/diplomacy';
 import { allianceOf, findTreaty, warsOf } from '@/game/ctx';
 import { atWar, isFriendly, overlordOf, relation, REBEL_TAG, vassalsOf } from '@/game/query';
-import { canDeclareWar } from '@/game/war';
+import { canDeclareWar, casusBelli } from '@/game/war';
+import { hasEmbargo } from '@/game/diplomacy';
+import { hasIntel, spyCost, spyNetwork, spySuccessChance, SPY_INCITE_LEVEL, SPY_INTEL_LEVEL, SPY_SABOTAGE_LEVEL, type SpyOp } from '@/game/espionage';
 import type { DiploActionType, Tag } from '@/game/types';
 import { formatCompact, formatDate, formatInt, formatMoney } from '@/lib/format';
 import { BAL } from '@/game/balance';
@@ -77,7 +79,9 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
       <div className="space-y-2">
         <p>{t('war.declareBody', { country: name(tag) })}</p>
         {chk.breaks.length > 0 && <p className="text-warn">{t('war.breaks', { list: chk.breaks.map((b) => t(`treaty.${b.type}`)).join(', ') })}</p>}
-        <p className={chk.justified ? 'text-good' : 'text-danger'}>{chk.justified ? t('war.justified') : t('war.unjustified')}</p>
+        <p className={chk.justified ? 'text-good' : 'text-danger'}>
+          {chk.justified ? `${t('war.justified')} (${casusBelli(ctx, me, tag).map((x) => t(`cb.${x}`)).join(', ')})` : t('war.unjustified')}
+        </p>
         {enemies.length > 0 && <p className="text-danger">{t('war.defenderAllies', { list: enemies.map(name).join(', ') })}</p>}
       </div>
     );
@@ -86,6 +90,15 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
       const r = await cmd({ type: 'declareWar', target: tag });
       if (r.ok) push(t('war.started'), 'bad');
     }
+  };
+
+  const intel = isMe || isFriendly(ctx, me, tag) || hasIntel(ctx, me, tag);
+  const net = spyNetwork(ctx, me, tag);
+  const spy = async (op: SpyOp) => {
+    const r = await cmd({ type: 'spy', op, target: tag });
+    if (!r.ok) return;
+    const d = r.data as { success?: boolean };
+    push(t(d.success ? `spy.${op}.ok` : 'spy.failed'), d.success ? 'good' : 'bad');
   };
 
   const bilateralRow = (a: DiploActionType) => {
@@ -163,8 +176,9 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
       <Stat label={t('country.population')} value={formatCompact(sum.pop, lang)} />
       <Stat label={t('country.provinces')} value={sum.provinces} />
       <Stat label={t('country.gdp')} value={formatMoney(sum.output, lang)} />
-      <Stat label={t('country.army')} value={state.rules.fogOfWar && !isMe ? '?' : `${formatInt(sum.soldiers, lang)}`} />
-      <Stat label={t('country.navy')} value={state.rules.fogOfWar && !isMe ? '?' : `${formatInt(sum.ships, lang)}`} />
+      <Stat label={t('country.army')} value={state.rules.fogOfWar && !intel ? '?' : `${formatInt(sum.soldiers, lang)}`} />
+      <Stat label={t('top.treasury')} value={intel ? formatMoney(c.treasury, lang) : '?'} hint={intel ? undefined : t('spy.needIntel')} />
+      <Stat label={t('top.manpower')} value={intel ? formatCompact(c.manpower, lang) : '?'} hint={intel ? undefined : t('spy.needIntel')} />
       <Stat label={t('country.stability')} value={Math.round(c.stability)} />
       <Stat label={t('country.reputation')} value={Math.round(c.reputation)} />
       {sum.alliance && <Stat label={t('country.alliance')} value={sum.alliance} />}
@@ -234,9 +248,40 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
                 <div className="flex flex-col gap-1">
                   {SECONDARY.filter((a) => a !== 'normalize' || rel < -30).map(bilateralRow)}
                   <ActionRow label={t('action.worsen')} desc={t('action.worsen.desc')} onClick={() => cmd({ type: 'diplomacy', action: 'worsen', target: tag }, t('diplo.done'))} />
+                  {hasEmbargo(ctx, me, tag) ? (
+                    <ActionRow label={t('action.liftEmbargo')} desc={t('action.liftEmbargo.desc')} onClick={() => cmd({ type: 'diplomacy', action: 'liftEmbargo', target: tag }, t('diplo.done'))} />
+                  ) : (
+                    <ActionRow label={t('action.embargo')} desc={t('action.embargo.desc')} danger onClick={() => cmd({ type: 'diplomacy', action: 'embargo', target: tag }, t('diplo.done'))} />
+                  )}
+                  <ActionRow label={t('action.sanction')} desc={t('action.sanction.desc')} danger onClick={() => cmd({ type: 'diplomacy', action: 'sanction', target: tag }, t('diplo.done'))} />
                 </div>
               </Collapsible>
             )}
+            <Collapsible title={t('spy.title')} right={<span className="tabular text-xs">{Math.round(net)}%</span>}>
+              <p className="mb-1 text-[11px] text-muted">{t('spy.desc')}</p>
+              {net > 0 && <Bar value={net} max={100} className="mb-1.5" color={net >= SPY_INCITE_LEVEL ? 'bg-good' : net >= SPY_INTEL_LEVEL ? 'bg-warn' : 'bg-muted'} />}
+              <div className="flex flex-col gap-1">
+                {net === 0 ? (
+                  <ActionRow label={t('spy.infiltrate')} desc={`${t('spy.infiltrate.desc')} · ${formatMoney(spyCost(ctx, me, 'infiltrate'), lang)}`} onClick={() => spy('infiltrate')} />
+                ) : (
+                  <>
+                    <ActionRow
+                      label={t('spy.sabotage')}
+                      desc={net < SPY_SABOTAGE_LEVEL ? t('spy.needLevel', { n: SPY_SABOTAGE_LEVEL }) : `${t('spy.sabotage.desc')} · ${formatMoney(spyCost(ctx, me, 'sabotage'), lang)} · %${Math.round(spySuccessChance(ctx, me, tag) * 100)}`}
+                      danger
+                      onClick={() => spy('sabotage')}
+                    />
+                    <ActionRow
+                      label={t('spy.incite')}
+                      desc={net < SPY_INCITE_LEVEL ? t('spy.needLevel', { n: SPY_INCITE_LEVEL }) : `${t('spy.incite.desc')} · ${formatMoney(spyCost(ctx, me, 'incite'), lang)} · %${Math.round(spySuccessChance(ctx, me, tag) * 100)}`}
+                      danger
+                      onClick={() => spy('incite')}
+                    />
+                    <ActionRow label={t('spy.recall')} desc={t('spy.recall.desc')} onClick={() => spy('recall')} />
+                  </>
+                )}
+              </div>
+            </Collapsible>
             {!war && tag !== REBEL_TAG && (
               <Button variant="danger" className="mt-1" onClick={declare}>
                 <Swords size={14} /> {t('action.declareWar')}

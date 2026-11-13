@@ -5,6 +5,7 @@
 import type { Alliance, DiploActionType, Tag, Treaty } from './types';
 import { allianceOf, findTreaty, getMods, invalidateDiplomacy, neighborCountries, provincesOf, warsOf, type Ctx } from './ctx';
 import {
+  isFriendly,
   addRelation,
   atWar,
   enemiesOf,
@@ -26,6 +27,7 @@ import { joinWar, leaveAlliance, removeTreaties, transferProvince } from './war'
 import { yearsBetween } from './calendar';
 import { hashString } from './rng';
 
+import { addGrievance } from './espionage';
 export interface Reason {
   key: string;
   value: number;
@@ -231,6 +233,21 @@ export interface ActionResult {
   evaluation?: Evaluation;
 }
 
+export function hasEmbargo(ctx: Ctx, from: Tag, to: Tag): boolean {
+  return ctx.s.treaties.some((t) => t.type === 'embargo' && t.a === from && t.b === to);
+}
+
+/** Ambargo: ticaret anlaşması bozulur, hedefin ticaret geliri düşer, hedef haklı savaş gerekçesi kazanır */
+export function imposeEmbargo(ctx: Ctx, from: Tag, to: Tag, quiet = false): void {
+  const s = ctx.s;
+  s.treaties = s.treaties.filter((t) => !(t.type === 'trade' && ((t.a === from && t.b === to) || (t.a === to && t.b === from))));
+  s.treaties.push({ id: newId(ctx, 't'), type: 'embargo', a: from, b: to, start: s.day, end: null });
+  invalidateDiplomacy(ctx);
+  addRelation(s, from, to, -20);
+  addGrievance(ctx, to, from, 'embargo', 3);
+  if (!quiet) notify(ctx, 'diplomacy', 'notif.embargo', { from: s.countries[from].name, to: s.countries[to].name }, { severity: to === s.player ? 'bad' : 'info', involves: [from, to], global: true });
+}
+
 export function addTreatyIfMissing(ctx: Ctx, type: Treaty['type'], a: Tag, b: Tag, years: number | null): Treaty {
   const existing = findTreaty(ctx, type, a, b);
   if (existing) return existing;
@@ -277,6 +294,7 @@ function precheck(ctx: Ctx, from: Tag, to: Tag, type: DiploActionType): string |
   const needsPeace: DiploActionType[] = ['nap', 'alliance', 'defensive', 'trade', 'access', 'normalize', 'vassalize', 'improve', 'requestProvince', 'cedeProvince'];
   if (war && needsPeace.includes(type)) return 'err.atWarWith';
   if (overlordOf(ctx, from) && (type === 'alliance' || type === 'vassalize')) return 'err.vassalCannotDeclare';
+  if (type === 'trade' && (hasEmbargo(ctx, from, to) || hasEmbargo(ctx, to, from))) return 'err.embargo';
   return null;
 }
 
@@ -304,6 +322,53 @@ export function performAction(ctx: Ctx, from: Tag, to: Tag, type: DiploActionTyp
       addRelation(s, from, to, gain);
       fc.ai.cooldowns[key] = s.day + 60;
       return { ok: true, accepted: true };
+    }
+    case 'embargo': {
+      if (hasEmbargo(ctx, from, to)) return { ok: false, error: 'err.alreadyHave' };
+      if (isFriendly(ctx, from, to)) return { ok: false, error: 'err.sameAlliance' };
+      imposeEmbargo(ctx, from, to);
+      // Hedef misilleme yapar
+      if (!tc.isPlayer && !hasEmbargo(ctx, to, from)) imposeEmbargo(ctx, to, from, true);
+      return { ok: true, accepted: true };
+    }
+    case 'liftEmbargo': {
+      if (!hasEmbargo(ctx, from, to)) return { ok: false, error: 'err.notFound' };
+      s.treaties = s.treaties.filter((t) => !(t.type === 'embargo' && t.a === from && t.b === to));
+      invalidateDiplomacy(ctx);
+      addRelation(s, from, to, 8);
+      return { ok: true, accepted: true };
+    }
+    case 'sanction': {
+      // Koordineli yaptırım: müttefikler, savunma ortakları ve bağlılar ambargoya çağrılır
+      const key = `sanction|${to}`;
+      if ((fc.ai.cooldowns[key] ?? -Infinity) > s.day) return { ok: false, error: 'err.cooldown' };
+      if (!hasEmbargo(ctx, from, to)) {
+        if (isFriendly(ctx, from, to)) return { ok: false, error: 'err.sameAlliance' };
+        imposeEmbargo(ctx, from, to);
+      }
+      const partners = new Set<Tag>();
+      const al = allianceOf(ctx, from);
+      if (al) for (const m of al.members) partners.add(m);
+      for (const v of vassalsOf(ctx, from)) partners.add(v);
+      for (const t of s.treaties) {
+        if (t.type !== 'defensive') continue;
+        if (t.a === from) partners.add(t.b);
+        if (t.b === from) partners.add(t.a);
+      }
+      partners.delete(from);
+      partners.delete(to);
+      let joined = 0;
+      for (const m of [...partners].sort()) {
+        const mc = s.countries[m];
+        if (!mc?.alive || mc.isPlayer || hasEmbargo(ctx, m, to) || isFriendly(ctx, m, to)) continue;
+        // Hedefle arası iyi olan ya da çağıranla arası bozuk olan katılmaz
+        if (relation(s, m, to) > 25 || relation(s, m, from) < 0) continue;
+        imposeEmbargo(ctx, m, to, true);
+        joined++;
+      }
+      fc.ai.cooldowns[key] = s.day + 180;
+      notify(ctx, 'diplomacy', 'notif.sanctions', { from: fc.name, to: tc.name, n: joined + 1 }, { severity: to === s.player ? 'bad' : 'info', involves: [from, to], global: true });
+      return { ok: true, accepted: true, joined } as ActionResult;
     }
     case 'worsen': {
       addRelation(s, from, to, -25);

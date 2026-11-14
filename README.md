@@ -2,6 +2,16 @@
 
 Tarayıcıda çalışan, tamamen istemci taraflı bir büyük strateji oyunu. Age of History 2'nin sade ülke yönetimi ile Age of History 3'ün daha derin ekonomi, diplomasi ve savaş sistemlerini birleştirmeyi hedefler. Sunucu, hesap ya da ücretli API gerektirmez; oyun durumu tarayıcıdaki IndexedDB'de saklanır.
 
+## 26.2 yenilikleri
+
+- **Entrika ve diplomasi:** casusluk (istihbarat, sabotaj, ayaklanma) ve İstihbarat Başkanı, savaş gerekçeleri, ambargo ve yaptırım çağrısı, müttefik paylı barış konferansı, nötr başlangıç (ilişkiler 0, ittifak yok), Birleşmiş Milletler (yaptırım, kınama, barış gücü; veto ve oy satın alma), büyük güç sıralaması.
+- **Ekonomi:** devlet tahvili ve ülkeler arası kredi, borsa, para basma ve enflasyon, dünya pazarı (gıda, demir, kömür, kereste, petrol) ve petrol politikası, mega projeler.
+- **Devlet ve toplum:** 19 ideoloji, seçimler, generaller, kültür ve din, birlik kurma (Turan, Avrupa Federasyonu…), başkent taşıma, bölge/ülke adı, bayrak ve renk değiştirme, otomatik yönetim.
+- **Olaylar:** salgın, deprem, sel, kuraklık, kasırga, orman yangını, iklim zirvesi.
+- **Çevrimiçi:** konuk olayları, sohbet, tur süresi sınırı, oda linki (isteğe bağlı sinyalleşme: ntfy.sh; `NEXT_PUBLIC_SIGNAL_URL` ile değiştirilebilir), kopunca yeniden bağlanma.
+- **Arayüz:** tarihçe ekranı ve görsel dışa aktarma, zaman atlamalı tekrar (WebM), mini harita ve arama, tur özeti, geri al (Ctrl+Z), hızlı kayıt yuvaları ve F9, renk körlüğü paleti, büyük yazı, klavye ile oynama, mobil alt çubuk ve çift dokunma, F3 performans ekranı, vals müziği, davul ve fanfar, Almanca/Rusça/İspanyolca temel arayüz.
+- **Harita ve hız:** Muğla ayrı il (26.1 kayıtları otomatik taşınır), tur hesabında yaklaşık %45 hızlanma, uzak görünümde ara bellekli çizim.
+
 ## 26.1 yenilikleri
 
 Sürüm numarası yıl.güncelleme biçimindedir. 26.1: tek birlik türü, nükleer silahlar, iç savaş ve asi devletler, gönderilecek asker sayısı, öğretici, Age of History 2 tarzı barış müzakeresi, limanlar ve deniz taşıma, bakanlar ve 2020 liderleri, mobil destek, WebRTC ile sunucusuz çevrimiçi mod (oda sahibi sunucudur, tur herkes hazır olunca ilerler), seçimli olaylar, asimilasyon, protesto ve askerî darbe, siyah-altın tema ve 1900'ler yazı tipleri.

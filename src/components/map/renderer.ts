@@ -64,6 +64,17 @@ interface CountryLabel {
   angle: number;
 }
 
+interface WorldScene {
+  coast: Path2D;
+  provinceBorders: Path2D;
+  border: Path2D | null;
+  rivers: Path2D[];
+  lakes: Path2D;
+  fillGroups: { color: string; path: Path2D }[];
+  stripeGroups: { color: RGB; path: Path2D }[];
+  relief: { color: string; path: Path2D }[];
+}
+
 const OCEAN_DEEP = '#0a121c';
 
 /** Araziye göre hafif kabartma tonu (ülke renginin üzerine) */
@@ -494,6 +505,98 @@ export class MapRenderer {
     };
   }
 
+  private worldCache: HTMLCanvasElement | null = null;
+  private worldKey = '';
+
+  /** Dünya katmanı: okyanus, bölge dolguları, kabartma, göller, nehirler ve sınırlar (harita koordinatında) */
+  private paintWorld(ctx: CanvasRenderingContext2D, sc: WorldScene, scale: number, opts: RenderOptions) {
+    const px = 1 / scale;
+    const fancy = opts.quality !== 'low';
+    // Okyanus: ortası açık, kutuplara doğru koyulaşan derinlik
+    const og = ctx.createLinearGradient(0, 0, 0, this.g.height);
+    og.addColorStop(0, '#0b1623');
+    og.addColorStop(0.45, '#16304d');
+    og.addColorStop(1, '#0b1623');
+    ctx.fillStyle = og;
+    ctx.fillRect(0, 0, this.g.width, this.g.height);
+    this.drawGraticule(ctx, scale);
+    // Kıyılarda sığ su parıltısı (karanın altında kalan yarısı görünmez)
+    if (fancy) {
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(110,170,225,0.07)';
+      ctx.lineWidth = px * 12;
+      ctx.stroke(sc.coast);
+      ctx.strokeStyle = 'rgba(140,195,240,0.10)';
+      ctx.lineWidth = px * 5;
+      ctx.stroke(sc.coast);
+    }
+    for (const fg of sc.fillGroups) {
+      ctx.fillStyle = fg.color;
+      ctx.fill(fg.path, 'evenodd');
+    }
+    // İşgal çizgileri (ekranda sabit boyutlu)
+    if (sc.stripeGroups.length) {
+      const m = new DOMMatrix().scaleSelf(1 / scale, 1 / scale);
+      for (const sg of sc.stripeGroups) {
+        const pat = this.pattern(ctx, sg.color);
+        if (!pat) continue;
+        pat.setTransform(m);
+        ctx.fillStyle = pat;
+        ctx.fill(sg.path, 'evenodd');
+      }
+    }
+    // Arazi kabartması
+    if (opts.relief && fancy) {
+      for (const r of sc.relief) {
+        ctx.fillStyle = r.color;
+        ctx.fill(r.path, 'evenodd');
+      }
+    }
+    ctx.fillStyle = '#183554';
+    ctx.fill(sc.lakes, 'evenodd');
+    if (opts.quality !== 'low') {
+      ctx.strokeStyle = 'rgba(96,150,210,0.55)';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const layers = opts.quality === 'high' ? 3 : 2;
+      for (let i = 0; i < layers; i++) {
+        if (i === 1 && scale < 0.25) break;
+        if (i === 2 && scale < 0.6) break;
+        ctx.lineWidth = px * (i === 0 ? 1.2 : 0.8);
+        ctx.stroke(sc.rivers[i]);
+      }
+    }
+    // Eyalet sınırları: belirgin siyah çizgi (uzak bakışta yumuşakça belirir); her kalitede çizilir
+    if (scale > 0.1) {
+      const a = Math.min(1, (scale - 0.1) / 0.15);
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = `rgba(0,0,0,${0.78 * a})`;
+      ctx.lineWidth = px * 1.0;
+      ctx.stroke(sc.provinceBorders);
+    }
+    ctx.strokeStyle = 'rgba(10,14,20,0.75)';
+    ctx.lineWidth = px * 0.9;
+    ctx.stroke(sc.coast);
+    if (sc.border) {
+      if (fancy) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+        ctx.lineWidth = px * 3.4;
+        ctx.stroke(sc.border);
+      }
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(12,14,18,0.92)';
+      ctx.lineWidth = px * 1.6;
+      ctx.stroke(sc.border);
+      // İnce altın kenar (AoH3 tarzı)
+      if (fancy && scale > 0.25) {
+        ctx.strokeStyle = 'rgba(232,206,150,0.22)';
+        ctx.lineWidth = px * 0.55;
+        ctx.stroke(sc.border);
+      }
+    }
+  }
+
   /** Taban katmanını mevcut görünüm için yeniden çiz (pahalı; seyrek çağrılır) */
   private renderBase(rctx: Ctx, coloring: ProvinceColoring, sel: Selection, opts: RenderOptions) {
     const s = rctx.s;
@@ -526,88 +629,27 @@ export class MapRenderer {
     ctx.fillStyle = OCEAN_DEEP;
     ctx.fillRect(0, 0, base.width, base.height);
     ctx.setTransform(k, 0, 0, k, -v.x * k, -v.y * k);
-    // Okyanus: ortası açık, kutuplara doğru koyulaşan derinlik
-    const og = ctx.createLinearGradient(0, 0, 0, this.g.height);
-    og.addColorStop(0, '#0b1623');
-    og.addColorStop(0.45, '#16304d');
-    og.addColorStop(1, '#0b1623');
-    ctx.fillStyle = og;
-    ctx.fillRect(0, 0, this.g.width, this.g.height);
-    this.drawGraticule(ctx, v.scale);
-    // Kıyılarda sığ su parıltısı (karanın altında kalan yarısı görünmez)
-    if (fancy) {
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(110,170,225,0.07)';
-      ctx.lineWidth = px * 12;
-      ctx.stroke(sc.coast);
-      ctx.strokeStyle = 'rgba(140,195,240,0.10)';
-      ctx.lineWidth = px * 5;
-      ctx.stroke(sc.coast);
-    }
-    for (const fg of sc.fillGroups) {
-      ctx.fillStyle = fg.color;
-      ctx.fill(fg.path, 'evenodd');
-    }
-    // İşgal çizgileri (ekranda sabit boyutlu)
-    if (sc.stripeGroups.length) {
-      const m = new DOMMatrix().scaleSelf(1 / v.scale, 1 / v.scale);
-      for (const sg of sc.stripeGroups) {
-        const pat = this.pattern(ctx, sg.color);
-        if (!pat) continue;
-        pat.setTransform(m);
-        ctx.fillStyle = pat;
-        ctx.fill(sg.path, 'evenodd');
+    if (cull) {
+      this.paintWorld(ctx, sc, v.scale, opts);
+    } else {
+      // Uzak görünüm: dünya bir kez ara belleğe çizilir; kaydırma ve uzaklaştırma yalnızca bu görüntüyü kopyalar
+      const key = `${this.idOf(coloring)}|${s.versions.owners}|${opts.quality}|${opts.relief}|${lod.tol}`;
+      const cw = Math.min(4096, Math.max(1024, Math.round(this.cssW * dpr * 1.25)));
+      if (!this.worldCache || this.worldKey !== key || this.worldCache.width !== cw) {
+        const c = this.worldCache ?? document.createElement('canvas');
+        c.width = cw;
+        c.height = Math.round((cw * this.g.height) / this.g.width);
+        const cc = c.getContext('2d');
+        if (cc) {
+          const kc = cw / this.g.width;
+          cc.setTransform(kc, 0, 0, kc, 0, 0);
+          this.paintWorld(cc, sc, kc, opts);
+        }
+        this.worldCache = c;
+        this.worldKey = key;
       }
-    }
-    // Arazi kabartması
-    if (opts.relief && fancy) {
-      for (const r of sc.relief) {
-        ctx.fillStyle = r.color;
-        ctx.fill(r.path, 'evenodd');
-      }
-    }
-    ctx.fillStyle = '#183554';
-    ctx.fill(sc.lakes, 'evenodd');
-    if (opts.quality !== 'low') {
-      ctx.strokeStyle = 'rgba(96,150,210,0.55)';
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      const layers = opts.quality === 'high' ? 3 : 2;
-      for (let i = 0; i < layers; i++) {
-        if (i === 1 && v.scale < 0.25) break;
-        if (i === 2 && v.scale < 0.6) break;
-        ctx.lineWidth = px * (i === 0 ? 1.2 : 0.8);
-        ctx.stroke(sc.rivers[i]);
-      }
-    }
-    // Eyalet sınırları: belirgin siyah çizgi (uzak bakışta yumuşakça belirir); her kalitede çizilir
-    if (v.scale > 0.1) {
-      const a = Math.min(1, (v.scale - 0.1) / 0.15);
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = `rgba(0,0,0,${0.78 * a})`;
-      ctx.lineWidth = px * 1.0;
-      ctx.stroke(sc.provinceBorders);
-    }
-    ctx.strokeStyle = 'rgba(10,14,20,0.75)';
-    ctx.lineWidth = px * 0.9;
-    ctx.stroke(sc.coast);
-    if (sc.border) {
-      if (fancy) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.22)';
-        ctx.lineWidth = px * 3.4;
-        ctx.stroke(sc.border);
-      }
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(12,14,18,0.92)';
-      ctx.lineWidth = px * 1.6;
-      ctx.stroke(sc.border);
-      // İnce altın kenar (AoH3 tarzı)
-      if (fancy && v.scale > 0.25) {
-        ctx.strokeStyle = 'rgba(232,206,150,0.22)';
-        ctx.lineWidth = px * 0.55;
-        ctx.stroke(sc.border);
-      }
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(this.worldCache, 0, 0, this.g.width, this.g.height);
     }
     if (sel.country) {
       const key = `${sel.country}|${s.versions.owners}|${lod.tol}`;

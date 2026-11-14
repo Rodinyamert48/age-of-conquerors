@@ -979,7 +979,7 @@ export const en: Record<string, string> = {
     'High taxes, long wars, famine, debt and occupation lower stability; low stability brings unrest and rebellion. Conquered provinces are not your cores: they are restless and may rebel; use "Assimilate" in the province panel to make them cores in 5 years. Rarely, protest waves and military coup attempts happen; you can suppress, concede or negotiate. A rebel state created in a civil war stays independent if it wins.',
   'help.shortcuts.title': 'Keyboard shortcuts',
   'help.shortcuts.body':
-    'Space: end turn (one turn) · C, A, D, R: tabs · M: map mode · H: go to capital · F5: quick save · Esc: clear selection · Arrow keys: pan the map. Shortcuts can be changed in settings.',
+    'Space: end turn · C, A, D, R: tabs · M: map layer · H: go to capital · N: next army · Enter: select the province at the centre · G: send the selected army there · Ctrl+Z: undo last order · F5: quick save · F9: quick load · F3: performance overlay · Esc: deselect · Arrow keys, + and −: map. On mobile a double tap zooms to the country and a long press acts as a right click.',
   'credits.title': 'Credits',
   'credits.about':
     'Age of Conquerors is a grand strategy game running entirely in the browser, built with Next.js, React, TypeScript, Tailwind CSS, Zustand and Web Workers. It requires no server, account or paid service.',
@@ -1041,7 +1041,8 @@ export const en: Record<string, string> = {
   'help.nuclear.title': 'Nuclear weapons',
   'help.nuclear.body': 'Once you research nuclear technology, build warheads from the Nuclear card in the left panel. Warheads can be launched at enemy provinces; use costs reputation and invites retaliation. Nuclear powers start with warheads.',
   'help.online.title': 'Online play',
-  'help.online.body': 'Use "Invite online players" in the game menu: the room owner is the server. Pick a country and create an invite code; your friend enters it via "Join online" in the main menu and sends back an answer code. The turn only advances when every human player presses Space.',
+  'help.online.body':
+    'Use "Invite online players" in the game menu: the room owner is the server. Pick a country and "Copy room link"; your friend opens it and presses "Join game" (manual codes remain as a fallback). The turn advances when every player presses Space or when the host’s time limit runs out. Use the chat button to talk and the diplomacy screen to send each other offers. If the connection drops, the game tries to reconnect by itself.',
   'cb.core': 'core territory',
   'cb.claim': 'territorial claim',
   'cb.treaty': 'broken treaty',
@@ -1281,4 +1282,8 @@ export const en: Record<string, string> = {
   'notif.ideologyChanged': '{country} changed its ideology',
   'notif.unionFormed': '{country} proclaimed a new state: {union}!',
   'reason.creditor': 'Creditor leverage',
+  'help.state.title': 'State: finance, UN, unions',
+  'help.state.body': 'In the State tab you issue bonds, invest in the stock market, print money (causing inflation), follow the world market and set your oil policy, start mega projects, pick one of 19 ideologies, put resolutions to the UN (votes can be bought; the top 5 great powers hold a veto) and, once you hold enough land, proclaim unions such as Turan or the European Federation. You can also change your country’s name, flag and colour, and delegate construction and recruitment to the AI.',
+  'help.intrigue.title': 'Espionage, casus belli, embargo',
+  'help.intrigue.body': 'Send agents from the country panel: as the network grows it unlocks secret info, sabotage and uprisings; if caught, the target gains a casus belli. A war without cause costs reputation and stability; cores, claims, broken treaties, embargoes and defending an ally all count as causes. Embargoes and sanction calls cut a rival’s trade income. At the peace table your allies want the provinces they occupy. The game starts neutral: relations are 0 and alliances form during play. Democracies hold elections every 4 years.',
 };

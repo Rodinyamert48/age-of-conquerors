@@ -1061,7 +1061,7 @@ export const tr: Record<string, string> = {
     'Yüksek vergiler, uzun savaşlar, kıtlık, borç ve işgal istikrarı düşürür; düşük istikrar huzursuzluk ve isyan getirir. Fethedilen bölgeler çekirdeğiniz değildir: huzursuzdurlar ve isyan çıkarabilirler; bölge panelindeki "Asimile et" ile 5 yılda çekirdek yapın. Nadiren protesto dalgaları ve askerî darbe girişimleri olur; bastırma, taviz ya da uzlaşma seçebilirsiniz. İç savaşta kurulan asi devlet kazanırsa bağımsız kalır.',
   'help.shortcuts.title': 'Klavye kısayolları',
   'help.shortcuts.body':
-    'Boşluk: turu bitir (tek tur) · C, A, D, R: sekmeler · M: harita katmanı · H: başkente git · F5: hızlı kayıt · Esc: seçimi kaldır · Ok tuşları: haritayı kaydır. Kısayollar ayarlardan değiştirilebilir.',
+    'Boşluk: turu bitir · C, A, D, R: sekmeler · M: harita katmanı · H: başkente git · N: sıradaki ordu · Enter: ortadaki bölgeyi seç · G: seçili orduyu ortadaki bölgeye gönder · Ctrl+Z: son emri geri al · F5: hızlı kayıt · F9: hızlı yükle · F3: performans ekranı · Esc: seçimi kaldır · Ok tuşları, + ve −: harita. Mobilde çift dokunma ülkeye yakınlaştırır, uzun basış sağ tık yerine geçer.',
 
   // Geliştirici bilgileri
   'credits.title': 'Geliştirici Bilgileri',
@@ -1129,7 +1129,8 @@ export const tr: Record<string, string> = {
   'help.nuclear.title': 'Nükleer silah',
   'help.nuclear.body': 'Nükleer teknoloji araştırıldığında sol paneldeki Nükleer kartından başlık üretilir. Başlıklar düşman bölgelerine fırlatılabilir; kullanım itibarı ve karşılık riski doğurur. Nükleer güçler oyuna başlıkla başlar.',
   'help.online.title': 'Çevrimiçi oyun',
-  'help.online.body': 'Oyun menüsünden "Çevrimiçi oyuncu davet et" ile oda açan siz sunucusunuz. Ülke seçip davet kodu üretin; arkadaşınız ana menüden "Çevrimiçi katıl" ile kodu girer ve cevap kodunu size verir. Tur, bütün insan oyuncular Boşluk tuşuna basmadan ilerlemez.',
+  'help.online.body':
+    'Oyun menüsünden "Çevrimiçi oyuncu davet et": odayı açan sunucudur. Ülke seçip "Oda linki kopyala" ile linki gönderin; arkadaşınız linki açıp "Oyuna katıl" der (link çalışmazsa elle kod alışverişi vardır). Tur, bütün oyuncular Boşluk\'a basınca ya da oda sahibinin koyduğu süre dolunca ilerler. Sohbet düğmesiyle yazışabilir, diplomasi ekranından birbirinize teklif gönderebilirsiniz. Bağlantı koparsa oyun kendiliğinden yeniden bağlanmayı dener.',
   'cb.core': 'çekirdek toprak',
   'cb.claim': 'toprak talebi',
   'cb.treaty': 'ihlal edilen antlaşma',
@@ -1369,4 +1370,8 @@ export const tr: Record<string, string> = {
   'notif.ideologyChanged': '{country} ideolojisini değiştirdi',
   'notif.unionFormed': '{country}, {union} adıyla yeni bir devlet ilan etti!',
   'reason.creditor': 'Alacaklı nüfuzu',
+  'help.state.title': 'Devlet: maliye, BM, birlikler',
+  'help.state.body': "Devlet sekmesinde tahvil çıkarır, borsaya yatırım yapar, para basar (enflasyon doğurur), dünya pazarını ve petrol politikanızı yönetir, mega projeler başlatır, 19 ideolojiden birini seçer, BM'ye karar sunar (oy satın alınabilir, ilk 5 büyük güç veto eder) ve yeterli toprağı alınca Turan, Avrupa Federasyonu gibi birlikleri ilan edersiniz. Ülke adını, bayrağını ve rengini de buradan değiştirirsiniz; inşaat ve asker toplamayı yapay zekâya devredebilirsiniz.",
+  'help.intrigue.title': 'Casusluk, gerekçeler, ambargo',
+  'help.intrigue.body': "Ülke panelinden ajan gönderin: ağ güçlendikçe gizli bilgiler, sabotaj ve ayaklanma açılır; yakalanırsanız hedef savaş gerekçesi kazanır. Gerekçesiz savaş itibar ve istikrar düşürür; çekirdek toprak, talep, bozulan antlaşma, ambargo ve müttefik savunması gerekçe sayılır. Ambargo ve yaptırım çağrısı rakibin ticaret gelirini düşürür. Barışta müttefikleriniz işgal ettikleri bölgeleri ister. Oyun nötr başlar: ilişkiler 0'dır, ittifaklar oyun içinde kurulur. Demokrasilerde 4 yılda bir seçim olur.",
 };

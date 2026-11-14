@@ -17,7 +17,7 @@ import { COUNTRY_IDEOLOGY, DEFAULT_IDEOLOGY } from './defs/ideologies';
 import type { Country, Difficulty, GameRules, GameState, PolicyId, Tag, TimeStep, VictoryRules } from './types';
 import { POLICY_IDS, RESOURCE_IDS } from './types';
 import type { World } from './world';
-import { makeCtx, invalidateAll, invalidateDiplomacy, provincesOf, type Ctx } from './ctx';
+import { bumpMods, makeCtx, invalidateAll, invalidateDiplomacy, provincesOf, type Ctx } from './ctx';
 import { getScenario } from './scenarios';
 import { parseDate, stepDays, monthsCrossed, dateFromDay } from './calendar';
 import { POLICY_DEFS } from './defs/policies';
@@ -393,6 +393,7 @@ export function advanceTurn(ctx: Ctx): void {
   const newDay = s.day + dt;
   const monthChanged = monthsCrossed(s.day, newDay) > 0;
   const startTurn = s.turn;
+  bumpMods();
 
   // 1. Ordu hareketleri
   movementTick(ctx, dt, { onArrive });
@@ -458,6 +459,7 @@ export function switchPlayer(ctx: Ctx, tag: Tag): boolean {
   const prev = s.countries[s.player];
   if (prev) prev.isPlayer = false;
   c.isPlayer = true;
+  bumpMods();
   s.player = tag;
   s.gameOver = null;
   s.meta.playerStartProvinces = provincesOf(ctx, tag).length;

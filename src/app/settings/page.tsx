@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import MenuFrame from '@/components/MenuFrame';
 import { Button, SectionTitle, Segmented, Toggle, useConfirm } from '@/components/ui';
-import { useT } from '@/i18n';
+import { useT, UI_LANGS } from '@/i18n';
 import { useSettings, DEFAULT_KEYS, type AutosaveFrequency, type KeyAction, type MapQuality } from '@/store/settings';
 import type { Difficulty, MapMode, NotificationKind, TimeStep } from '@/game/types';
 import { MAP_MODES } from '@/components/map/modes';
@@ -56,7 +56,7 @@ export default function SettingsPage() {
       <div className="rounded border border-line bg-panel/90 px-4 py-2">
         <SectionTitle>{t('settings.general')}</SectionTitle>
         <Row label={t('settings.language')}>
-          <Segmented value={s.language} onChange={(v) => s.set({ language: v })} options={[{ value: 'tr', label: 'Türkçe' }, { value: 'en', label: 'English' }]} />
+          <Segmented value={s.uiLang ?? s.language} onChange={(v) => s.set({ uiLang: v, language: v === 'tr' ? 'tr' : 'en' })} options={UI_LANGS.map((l) => ({ value: l.id, label: l.label }))} />
         </Row>
 
         <SectionTitle>{t('settings.audio')}</SectionTitle>

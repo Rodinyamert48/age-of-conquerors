@@ -7,7 +7,7 @@
 import { assimilationTick } from './assimilation';
 import { foreignFaith } from './society';
 import type { Country, Tag } from './types';
-import { getMods, provincesOf, warsOf, armiesAt, invalidateOwnership, type Ctx } from './ctx';
+import { bumpMods, getMods, provincesOf, warsOf, armiesAt, invalidateOwnership, type Ctx } from './ctx';
 import { REBEL_TAG, armySoldiers, overlordOf } from './query';
 import { chance } from './rng';
 import { notify } from './notify';
@@ -68,6 +68,7 @@ export function provinceUnrestTarget(ctx: Ctx, p: number): number {
 }
 
 export function stabilityTick(ctx: Ctx): void {
+  bumpMods();
   const s = ctx.s;
   for (const c of Object.values(s.countries)) {
     if (!c.alive || c.tag === REBEL_TAG || c.rebelMovement) continue;
@@ -172,6 +173,7 @@ export function resolveRebellions(ctx: Ctx): void {
         tc.policies.tax = Math.min(tc.policies.tax, 1);
         tc.warExhaustion = Math.max(0, tc.warExhaustion - 20);
         tc.treasury *= 0.7;
+        bumpMods();
         tc.tempMods.push({ id: 'post_revolution', label: 'mod.postRevolution', until: s.day + 365, mods: { taxEfficiency: -0.15, unrest: -10 } });
         notify(ctx, 'rebellion', 'notif.governmentFell', { country: tc.name }, { severity: 'critical', involves: [target], global: true });
       }

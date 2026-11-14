@@ -41,6 +41,8 @@ export const DEFAULT_KEYS: Record<KeyAction, string> = {
 
 export interface SettingsState {
   language: Lang;
+  /** arayüz dili (de/ru/es seçilince veri dili İngilizce kalır) */
+  uiLang?: 'tr' | 'en' | 'de' | 'ru' | 'es';
   soundEnabled: boolean;
   soundVolume: number;
   musicEnabled: boolean;

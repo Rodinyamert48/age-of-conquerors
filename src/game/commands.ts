@@ -4,7 +4,7 @@
  */
 import type { ArmyUnits, BuildingId, CommandResult, DiploActionType, PeaceTerm, PolicyId, Tag, TimeStep, UnitType } from './types';
 import { POLICY_IDS } from './types';
-import { invalidateAll, invalidateArmies, warsOf, type Ctx } from './ctx';
+import { bumpMods, invalidateAll, invalidateArmies, warsOf, type Ctx } from './ctx';
 import { findPath } from './movement';
 import { armySize, atWar, warSide, REBEL_TAG } from './query';
 import { availableTechs, buildingAvailability, cancelConstruction, canResearch, createArmy, mergeInto, startConstruction, startRecruit, techCost } from './construction';
@@ -98,6 +98,7 @@ const fail = (error: string, errorParams?: Record<string, string | number>): Com
 
 export function runCommand(ctx: Ctx, cmd: Command): CommandResult {
   const r = dispatch(ctx, cmd);
+  bumpMods();
   if (r.ok) computeAllBudgets(ctx);
   return r;
 }
@@ -123,6 +124,7 @@ export function setHumans(ctx: Ctx, tags: Tag[]): void {
   for (const old of s.humans ?? []) if (old !== s.player && s.countries[old]) s.countries[old].isPlayer = false;
   s.humans = Array.from(new Set([s.player, ...tags])).filter((t) => s.countries[t]?.alive);
   for (const t of s.humans) s.countries[t].isPlayer = true;
+  bumpMods();
   invalidateAll(ctx);
 }
 

@@ -6,7 +6,7 @@ import { BUILDING_IDS } from './types';
 import { BUILDING_DEFS, BUILDING_INDEX } from './defs/buildings';
 import { UNIT_DEFS } from './defs/units';
 import { TECH_BY_ID, TECH_PREREQ, TECHS } from './defs/techs';
-import { armiesAt, getMods, invalidateArmies, provincesOf, type Ctx } from './ctx';
+import { bumpMods, armiesAt, getMods, invalidateArmies, provincesOf, type Ctx } from './ctx';
 import { canAfford, resourcePrice, spend, unitRecruitCost, B_MIL, B_PORT, B_UNIV } from './economy';
 import { notify, newId } from './notify';
 import { yearOf } from './calendar';
@@ -288,6 +288,7 @@ export function researchTick(ctx: Ctx, dt: number): void {
     if (c.research.progress >= cost) {
       const id = c.research.current;
       c.techs.push(id);
+      bumpMods();
       c.research.progress -= cost;
       c.research.current = null;
       notify(ctx, 'research', 'notif.researchDone', { tech: id }, { severity: 'good', involves: [c.tag] });

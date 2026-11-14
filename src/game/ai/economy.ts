@@ -4,7 +4,7 @@
  */
 import type { BuildingId, Country } from '../types';
 import { BUILDING_IDS } from '../types';
-import { getMods, provincesOf, type Ctx } from '../ctx';
+import { bumpMods, getMods, provincesOf, type Ctx } from '../ctx';
 import { buildingAvailability, startConstruction, availableTechs } from '../construction';
 import { TECH_BY_ID } from '../defs/techs';
 import { TAX_RATES } from '../defs/policies';
@@ -75,6 +75,7 @@ export function aiPolicies(ctx: Ctx, c: Country): void {
     if (p[k] < cap) p[k]++;
     if (months > 24 && p.welfare < 4 && c.stability < 75) p.welfare++;
   }
+  bumpMods();
 }
 
 function buildingValue(ctx: Ctx, c: Country, p: number, id: BuildingId, threatBorder: Set<number>): number {

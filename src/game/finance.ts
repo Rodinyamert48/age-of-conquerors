@@ -3,7 +3,7 @@
  * dünya pazarı (kaynak ve petrol fiyatları), mega projeler, büyük güç sıralaması, ideoloji değişimi.
  */
 import type { Ctx } from './ctx';
-import { getMods, provincesOf } from './ctx';
+import { bumpMods, getMods, provincesOf } from './ctx';
 import type { Country, Loan, MarketGood, Tag } from './types';
 import { addRelation, isAtWar, landPower, REBEL_TAG, relation, totalOutput } from './query';
 import { chance, hashString } from './rng';
@@ -161,6 +161,7 @@ export function printMoney(ctx: Ctx, tag: Tag, amountK: number): R {
   if (!c?.alive || !(amountK > 0) || amountK > 1) return { ok: false, error: 'err.invalidTarget' };
   c.treasury += yearly(c) * amountK;
   c.inflation = Math.min(2, (c.inflation ?? 0) + amountK * 0.5);
+  bumpMods();
   return { ok: true };
 }
 
@@ -285,6 +286,7 @@ export function powersTick(ctx: Ctx, announce = true): void {
   const prev = s.greatPowers ?? [];
   const next = rankPowers(ctx);
   s.greatPowers = next;
+  bumpMods();
   if (!announce || !prev.length) return;
   for (const t of prev) {
     if (next.includes(t) || !s.countries[t]?.alive) continue;
@@ -308,6 +310,7 @@ export function setIdeology(ctx: Ctx, tag: Tag, id: string): R {
   if (c.ideologyChanged !== undefined && s.day - c.ideologyChanged < IDEOLOGY_COOLDOWN_YEARS * 365) return { ok: false, error: 'err.cooldown' };
   c.ideology = id;
   c.ideologyChanged = s.day;
+  bumpMods();
   c.stability = Math.max(0, c.stability - 8);
   c.tempMods = c.tempMods.filter((m) => m.id !== 'ideology_shift');
   c.tempMods.push({ id: 'ideology_shift', label: 'mod.ideologyShift', until: s.day + 365, mods: { unrest: 5 } });
@@ -360,6 +363,7 @@ export function financeTick(ctx: Ctx, yearChanged: boolean): void {
       }
     }
   }
+  bumpMods();
   marketTick(ctx);
   if (yearChanged || !s.greatPowers) powersTick(ctx);
   void provincesOf;

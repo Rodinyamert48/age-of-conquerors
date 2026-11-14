@@ -1,3 +1,4 @@
+import { bumpMods } from './ctx';
 /**
  * Seçimler: demokratik ülkelerde 4 yılda bir. İktidar kaybederse kabine düşer (bakanlar yeniden atanır)
  * ve politika yönü değişir. İnsan oyuncuya seçimden önce kampanya kararı sorulur.
@@ -34,6 +35,7 @@ export function holdElection(ctx: Ctx, c: Country, forceResult?: boolean): boole
   c.electionBonus = 0;
   c.campaignAsked = false;
   c.lastElection = { day: s.day, won };
+  bumpMods();
   if (won) {
     c.stability = Math.min(100, c.stability + 3);
   } else {

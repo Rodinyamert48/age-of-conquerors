@@ -5,7 +5,7 @@
  */
 import type { Era, GovernmentType, Modifiers, PolicyId, Tag, TreatyType } from './types';
 import { POLICY_IDS } from './types';
-import { allianceOf, armiesAt, findTreaty, invalidateArmies, invalidateControl, invalidateDiplomacy, neighborCountries, provincesOf, type Ctx } from './ctx';
+import { bumpMods, allianceOf, armiesAt, findTreaty, invalidateArmies, invalidateControl, invalidateDiplomacy, neighborCountries, provincesOf, type Ctx } from './ctx';
 import { addRelation, atWar, enemiesOf, isAtWar, REBEL_TAG, relation, warSide } from './query';
 import { chance, weightedPick, pick } from './rng';
 import { notify, newId } from './notify';
@@ -205,6 +205,7 @@ function resolveTag(target: string, ctxTarget?: Tag): Tag | null {
 }
 
 export function applyEffects(ctx: Ctx, tag: Tag, effects: Effect[], target?: Tag): void {
+  bumpMods();
   const s = ctx.s;
   const c = s.countries[tag];
   if (!c) return;

@@ -9,6 +9,8 @@ import { computeModifiers } from './modifiers';
 
 export interface Cache {
   modKeys: Map<Tag, string>;
+  /** hızlı yol: ülkenin etkileri en son hangi sürümde/günde doğrulandı */
+  modStamp: Map<Tag, number>;
   mods: Map<Tag, Modifiers>;
   provByOwner: Map<Tag, number[]> | null;
   provByController: Map<Tag, number[]> | null;
@@ -31,6 +33,7 @@ export interface Ctx {
 export function emptyCache(): Cache {
   return {
     modKeys: new Map(),
+    modStamp: new Map(),
     mods: new Map(),
     provByOwner: null,
     provByController: null,
@@ -201,7 +204,22 @@ export function neighborCountries(ctx: Ctx, tag: Tag): Set<Tag> {
   return ctx.cache.neighborCountries.get(tag) ?? new Set();
 }
 
+/**
+ * Etki sürümü: ülke etkilerini değiştirebilecek her işlemden sonra artırılır (komut, olay, tur fazı).
+ * Sürüm ve gün aynıysa anahtar yeniden hesaplanmaz; yapay zekâ turunda binlerce çağrıyı ucuzlatır.
+ */
+let modEpoch = 1;
+export function bumpMods(): void {
+  modEpoch++;
+}
+
 export function getMods(ctx: Ctx, tag: Tag): Modifiers {
+  const stamp = modEpoch * 4194304 + ctx.s.day;
+  if (ctx.cache.modStamp.get(tag) === stamp) {
+    const hit = ctx.cache.mods.get(tag);
+    if (hit) return hit;
+  }
+  ctx.cache.modStamp.set(tag, stamp);
   const c = ctx.s.countries[tag];
   const key = c
     ? `${c.techs.length}|${Object.values(c.policies).join('')}|${c.government}|${c.tempMods.map((m) => m.id).join(',')}|${ministerKey(c)}|${c.isPlayer ? 1 : 0}|${ctx.s.rules.difficulty}|${c.ideology ?? ''}|${Math.round((c.inflation ?? 0) * 200)}|${c.projects ? Object.values(c.projects).filter((p) => p.end <= ctx.s.day).length : 0}|${ctx.s.greatPowers?.includes(tag) ? 1 : 0}`

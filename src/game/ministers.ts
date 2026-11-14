@@ -1,3 +1,4 @@
+import { bumpMods } from './ctx';
 /**
  * Bakanlar: her ülkede yedi bakanlık vardır. Oyun başında ve her 5 yılda bir yeni bakanlar atanır.
  * Her bakanın bir özelliği vardır: bir olumlu (+) ve bir olumsuz (−) etki. Adaylar ülke, bakanlık ve
@@ -129,6 +130,7 @@ export function appointMinisters(ctx: Ctx, tag: Tag, picks: Partial<Record<Minis
     ministers[role] = cands[Math.max(0, Math.min(2, picks[role] ?? 0))];
   }
   c.ministers = ministers;
+  bumpMods();
   c.ministerRound = round;
   c.ministerNext = ctx.s.day + Math.round(MINISTER_TERM_YEARS * 365.25);
 }

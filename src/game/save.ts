@@ -26,7 +26,49 @@ export class SaveError extends Error {
 const MIGRATIONS: Record<number, (s: Record<string, unknown>) => Record<string, unknown>> = {
   // 0 → 1: erken geliştirme kayıtları (history alanı yoktu)
   0: (s) => ({ ...s, history: Array.isArray(s.history) ? s.history : [], saveVersion: 1 }),
+  // 1 → 2 (26.2): Muğla, Aydın'dan ayrı bir bölge oldu. Yeni bölge listeye eklenir ve sonraki
+  // bütün bölge/deniz düğümü indeksleri bir kayar.
+  1: (s) => {
+    const provinces = s.provinces as Record<string, unknown>[];
+    if (!Array.isArray(provinces) || provinces.length !== MUGLA_SPLIT.oldCount) return { ...s, saveVersion: 2 };
+    return { ...splitMugla(s), saveVersion: 2 };
+  },
 };
+
+/** 26.1 haritasında birleşik Aydın+Muğla bölgesinin indeksi ve yeni Aydın bölgesinin eklendiği yer */
+const MUGLA_SPLIT = { oldCount: 2863, at: 2423, source: 2437, share: 0.471 };
+
+function splitMugla(raw: Record<string, unknown>): Record<string, unknown> {
+  const { at, source, share } = MUGLA_SPLIT;
+  const r = (i: unknown): unknown => (typeof i === 'number' && i >= at ? i + 1 : i);
+  const s = raw as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const src = s.provinces[source];
+  const fresh = { ...src, pop: src.pop * share, output: src.output * share, buildings: src.buildings.slice(), cores: src.cores.slice(), construction: null, recruits: [], siege: null };
+  src.pop *= 1 - share;
+  src.output *= 1 - share;
+  s.provinces.splice(at, 0, fresh);
+  for (const c of Object.values(s.countries) as any[]) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    c.capital = r(c.capital);
+    if (Array.isArray(c.claims)) c.claims = c.claims.map(r);
+  }
+  for (const a of Object.values(s.armies) as any[]) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    a.location = r(a.location);
+    if (Array.isArray(a.path)) a.path = a.path.map(r);
+    a.aiTarget = r(a.aiTarget);
+  }
+  for (const b of Object.values(s.battles ?? {}) as any[]) b.location = r(b.location); // eslint-disable-line @typescript-eslint/no-explicit-any
+  for (const b of (s.battleReports ?? []) as any[]) b.location = r(b.location); // eslint-disable-line @typescript-eslint/no-explicit-any
+  for (const n of (s.notifications ?? []) as any[]) if (n.focus && typeof n.focus.province === 'number') n.focus.province = r(n.focus.province); // eslint-disable-line @typescript-eslint/no-explicit-any
+  for (const p of (s.proposals ?? []) as any[]) p.province = r(p.province); // eslint-disable-line @typescript-eslint/no-explicit-any
+  for (const p of (s.pendingEvents ?? []) as any[]) p.province = r(p.province); // eslint-disable-line @typescript-eslint/no-explicit-any
+  for (const o of (s.peaceOffers ?? []) as any[]) for (const t of o.terms ?? []) if (typeof t.province === 'number') t.province = r(t.province); // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (s.provinceNames) s.provinceNames = Object.fromEntries(Object.entries(s.provinceNames).map(([k, v]) => [r(Number(k)), v]));
+  if (Array.isArray(s.ownerStart)) s.ownerStart.splice(at, 0, s.ownerStart[source]);
+  if (Array.isArray(s.ownerLog)) for (const e of s.ownerLog) e[1] = r(e[1]);
+  delete s.undo;
+  if (s.versions) s.versions.owners = (s.versions.owners ?? 0) + 1;
+  return s;
+}
 
 export function serializeState(state: GameState): SaveEnvelope {
   return { format: 'age-of-conquerors-save', version: SAVE_VERSION, savedAt: Date.now(), state };

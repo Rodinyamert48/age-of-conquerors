@@ -729,9 +729,17 @@ function bboxGapKm(a, b) {
   return Math.hypot(dx * KM_PER_UNIT_EQ * Math.cos(lat * DEG), dy * KM_PER_UNIT_EQ * Math.cos(0.8 * lat * DEG));
 }
 
+// Elle ayrı tutulan iller: komşularıyla birleştirilmez (ör. Muğla, Aydın'dan bağımsız bir bölgedir)
+const KEEP_SEPARATE = { TUR: ['Muğla', 'Aydın'] };
+const protectedGroups = new Set();
+for (const g of groups) {
+  const names = KEEP_SEPARATE[g.a3];
+  if (names && g.members.some((m) => names.includes(feats[m].name))) protectedGroups.add(g.id);
+}
+
 {
   let merges = 0;
-  const stuck = new Set();
+  const stuck = new Set(protectedGroups);
   for (;;) {
     let g = null;
     let gn = MERGE_BELOW;
@@ -744,12 +752,12 @@ function bboxGapKm(a, b) {
       }
     }
     if (!g) break;
-    let cands = [...g.nb].map((id) => groups[id]).filter((h) => h.alive && h.a3 === g.a3);
+    let cands = [...g.nb].map((id) => groups[id]).filter((h) => h.alive && h.a3 === g.a3 && !protectedGroups.has(h.id));
     let island = false;
     if (!cands.length) {
       island = true;
       cands = groups.filter(
-        (h) => h.alive && h.id !== g.id && h.a3 === g.a3 && bboxGapKm(g.bbox, h.bbox) < ISLAND_MERGE_KM,
+        (h) => h.alive && h.id !== g.id && h.a3 === g.a3 && !protectedGroups.has(h.id) && bboxGapKm(g.bbox, h.bbox) < ISLAND_MERGE_KM,
       );
     }
     if (!cands.length) {

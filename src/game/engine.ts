@@ -42,7 +42,7 @@ import { notify } from './notify';
 import { BAL } from './balance';
 import { fortLevel } from './query';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface NewGameOptions {
   scenarioId: string;

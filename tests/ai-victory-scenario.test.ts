@@ -81,11 +81,11 @@ describe('zafer ve yenilgi', () => {
   });
 
   it('bölge hedefi tamamlanınca zafer algılanır', () => {
-    const ctx = newModernGame({ victory: { mode: 'provinces', target: 39 } });
-    expect(provincesOf(ctx, 'TUR').length).toBe(38);
+    const ctx = newModernGame({ victory: { mode: 'provinces', target: 40 } });
+    expect(provincesOf(ctx, 'TUR').length).toBe(39);
     advanceTurn(ctx);
     expect(ctx.s.gameOver).toBeNull();
-    expect(victoryProgress(ctx).progress).toBeCloseTo(38 / 39, 5);
+    expect(victoryProgress(ctx).progress).toBeCloseTo(39 / 40, 5);
     const halep = provinceByName(ctx.w, 'SYR', 'Halep');
     transferProvince(ctx, halep, 'TUR');
     advanceTurn(ctx);

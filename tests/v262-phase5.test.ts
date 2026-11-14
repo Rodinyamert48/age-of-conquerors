@@ -14,6 +14,7 @@ import { toSim } from '@/game/combat';
 import { tally, vetoPowers } from '@/game/un';
 import { evaluateProposal } from '@/game/diplomacy';
 import { relation } from '@/game/query';
+import { deserialize } from '@/game/save';
 
 const rich = (ctx: ReturnType<typeof newModernGame>, tag = ctx.s.player) => (ctx.s.countries[tag].treasury = 1e13);
 
@@ -253,5 +254,45 @@ describe('26.2 Faz 5 — geri al ve otomatik yönetim', () => {
     expect(busy || built > base).toBe(true);
     void declareWar;
     void invalidateDiplomacy;
+  });
+});
+
+describe('26.2 Faz 5 — Muğla ve kayıt taşıma', () => {
+  it('Muğla, Aydın\'dan ayrı bir Türkiye bölgesidir', () => {
+    const ctx = newModernGame();
+    const names = provincesOf(ctx, 'TUR').map((p) => ctx.w.data.provinces[p].name);
+    expect(names).toContain('Muğla');
+    expect(names).toContain('Aydın');
+    expect(names).toHaveLength(39);
+    const mugla = provincesOf(ctx, 'TUR').find((p) => ctx.w.data.provinces[p].name === 'Muğla')!;
+    const aydin = provincesOf(ctx, 'TUR').find((p) => ctx.w.data.provinces[p].name === 'Aydın')!;
+    expect(ctx.w.data.provinces[mugla].adj).toContain(aydin);
+  });
+
+  it('26.1 kaydı yeni haritaya taşınır: bölge eklenir, indeksler kayar', () => {
+    const ctx = newModernGame();
+    // 26.1 biçimine geri çevir: yeni Aydın bölgesi (2423) yoktu
+    const old = JSON.parse(JSON.stringify(ctx.s)) as typeof ctx.s;
+    const back = (i: number) => (i > 2423 ? i - 1 : i);
+    old.provinces.splice(2423, 1);
+    for (const c of Object.values(old.countries)) {
+      c.capital = back(c.capital);
+      c.claims = c.claims.map(back);
+    }
+    for (const a of Object.values(old.armies)) {
+      a.location = back(a.location);
+      a.path = a.path.map(back);
+    }
+    delete old.ownerStart;
+    delete old.ownerLog;
+    old.saveVersion = 1;
+    const capBefore = old.countries.USA.capital;
+    const loaded = deserialize(JSON.parse(JSON.stringify(old)), ctx.w.P);
+    expect(loaded.provinces).toHaveLength(ctx.w.P);
+    expect(loaded.provinces[2423].owner).toBe('TUR');
+    expect(loaded.countries.USA.capital).toBe(capBefore >= 2423 ? capBefore + 1 : capBefore);
+    expect(loaded.countries.USA.capital).toBe(ctx.s.countries.USA.capital);
+    for (const [id, a] of Object.entries(loaded.armies)) expect(a.location, id).toBe(ctx.s.armies[id].location);
+    expect(loaded.saveVersion).toBe(2);
   });
 });

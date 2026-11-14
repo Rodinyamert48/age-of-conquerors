@@ -204,7 +204,7 @@ export function neighborCountries(ctx: Ctx, tag: Tag): Set<Tag> {
 export function getMods(ctx: Ctx, tag: Tag): Modifiers {
   const c = ctx.s.countries[tag];
   const key = c
-    ? `${c.techs.length}|${Object.values(c.policies).join('')}|${c.government}|${c.tempMods.map((m) => m.id).join(',')}|${ministerKey(c)}|${c.isPlayer ? 1 : 0}|${ctx.s.rules.difficulty}`
+    ? `${c.techs.length}|${Object.values(c.policies).join('')}|${c.government}|${c.tempMods.map((m) => m.id).join(',')}|${ministerKey(c)}|${c.isPlayer ? 1 : 0}|${ctx.s.rules.difficulty}|${c.ideology ?? ''}|${Math.round((c.inflation ?? 0) * 200)}|${c.projects ? Object.values(c.projects).filter((p) => p.end <= ctx.s.day).length : 0}|${ctx.s.greatPowers?.includes(tag) ? 1 : 0}`
     : 'none';
   if (ctx.cache.modKeys.get(tag) !== key || !ctx.cache.mods.has(tag)) {
     ctx.cache.mods.set(tag, computeModifiers(ctx.s, tag));

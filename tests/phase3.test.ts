@@ -48,9 +48,10 @@ describe('Faz 3 — asimilasyon', () => {
     ctx.s.countries.TUR.treasury = 1e12;
     expect(prev).not.toBe('TUR');
     expect(runCommand(ctx, { type: 'assimilate', province: p }).ok).toBe(true);
-    expect(ps.assimilating).toBe(ASSIMILATION_DAYS);
+    // Farklı inançtan halkta süre 1,4 kat uzar (26.2)
+    expect(ps.assimilating).toBe(Math.round(ASSIMILATION_DAYS * 1.4));
     expect(runCommand(ctx, { type: 'assimilate', province: p }).ok).toBe(false);
-    for (let i = 0; i < 61; i++) stabilityTick(ctx);
+    for (let i = 0; i < 90; i++) stabilityTick(ctx);
     expect(ps.cores).toContain('TUR');
     expect(ps.assimilating).toBeUndefined();
     expect(provincesOf(ctx, 'TUR')).toContain(p);

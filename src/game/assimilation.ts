@@ -5,6 +5,7 @@
 import type { Ctx } from './ctx';
 import { provinceOutput } from './economy';
 import type { Tag } from './types';
+import { foreignFaith } from './society';
 
 export const ASSIMILATION_DAYS = 5 * 365;
 
@@ -26,7 +27,8 @@ export function startAssimilation(ctx: Ctx, tag: Tag, p: number): { ok: boolean;
   const chk = canAssimilate(ctx, tag, p);
   if (!chk.ok) return chk;
   ctx.s.countries[tag].treasury -= assimilationCost(ctx, p);
-  ctx.s.provinces[p].assimilating = ASSIMILATION_DAYS;
+  // Farklı inançtan halkın asimilasyonu daha uzun sürer
+  ctx.s.provinces[p].assimilating = Math.round(ASSIMILATION_DAYS * (foreignFaith(ctx, p) ? 1.4 : 1));
   return { ok: true };
 }
 
@@ -44,6 +46,7 @@ export function assimilationTick(ctx: Ctx, days: number): void {
       if (ps.assimilating <= 0) {
         delete ps.assimilating;
         ps.cores.push(ps.owner);
+        ps.culture = ps.owner;
         ps.unrest = Math.max(0, ps.unrest - 20);
       }
     } else if (s.countries[ps.owner] && !s.countries[ps.owner].isPlayer && !ps.cores.includes(ps.owner) && ps.controller === ps.owner) {

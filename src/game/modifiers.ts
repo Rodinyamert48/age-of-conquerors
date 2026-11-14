@@ -2,6 +2,8 @@ import { ministerMods } from './ministers';
 import type { GameState, Modifiers, Tag } from './types';
 import { TECH_BY_ID } from './defs/techs';
 import { GOVERNMENT_DEFS, POLICY_DEFS } from './defs/policies';
+import { IDEOLOGY_BY_ID } from './defs/ideologies';
+import { GREAT_POWER_MODS, MEGA_PROJECTS } from './defs/projects';
 import { POLICY_IDS } from './types';
 
 export function zeroModifiers(): Modifiers {
@@ -74,6 +76,12 @@ export function computeModifiers(s: GameState, tag: Tag): Modifiers {
   }
   addMods(m, GOVERNMENT_DEFS[c.government]?.mods ?? {});
   for (const mm of ministerMods(c)) addMods(m, mm);
+  if (c.ideology) addMods(m, IDEOLOGY_BY_ID[c.ideology]?.mods ?? {});
+  // Enflasyon: üretimi ve vergi verimini düşürür, huzursuzluğu artırır
+  const inf = c.inflation ?? 0;
+  if (inf > 0.005) addMods(m, { productionIncome: -inf * 0.8, taxEfficiency: -inf * 0.3, unrest: inf * 30 });
+  if (c.projects) for (const id in c.projects) if (c.projects[id].end <= s.day) addMods(m, MEGA_PROJECTS[id]?.mods ?? {});
+  if (s.greatPowers?.includes(tag)) addMods(m, GREAT_POWER_MODS);
   for (const tm of c.tempMods) if (tm.until > s.day) addMods(m, tm.mods);
   if (!c.isPlayer) addMods(m, DIFFICULTY_AI_MODS[s.rules.difficulty] ?? {});
   return m;

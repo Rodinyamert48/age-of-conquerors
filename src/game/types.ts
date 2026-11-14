@@ -234,6 +234,24 @@ export interface Country {
   nukes?: number;
   /** bakanlar (yedi bakanlık) ve atama bilgisi */
   ministers?: Partial<Record<'interior' | 'foreign' | 'defense' | 'education' | 'staff' | 'health' | 'finance' | 'intelligence', { name: string; trait: string }>>;
+  /** ideoloji (defs/ideologies.ts) ve son değişim günü */
+  ideology?: string;
+  ideologyChanged?: Day;
+  /** enflasyon (0,1 = %10): para basınca yükselir, zamanla söner */
+  inflation?: number;
+  /** borsaya yatırılan paranın güncel değeri */
+  stocks?: number;
+  /** mega projeler: kimlik → başlangıç/bitiş günü (bitince kalıcı etki) */
+  projects?: Record<string, { start: Day; end: Day }>;
+  /** petrol üretim politikası */
+  oilPolicy?: 'cut' | 'normal' | 'boost';
+  /** son ayın petrol ticareti dengesi (gösterim) */
+  oilNet?: number;
+  /** generaller */
+  generals?: General[];
+  /** otomatik yönetim (inşaat / asker toplama yapay zekâya devredilir) */
+  auto?: { build?: boolean; recruit?: boolean };
+  capitalMoved?: Day;
   /** seçimler (demokratik ülkeler) */
   nextElection?: Day;
   electionBonus?: number;
@@ -261,6 +279,40 @@ export interface Country {
   wealth: number;
   /** Bu ülke isyan hareketi olarak var (henüz toprağı yok) */
   rebelMovement: boolean;
+}
+
+export interface General {
+  id: string;
+  name: string;
+  trait: string;
+  level: number;
+  xp: number;
+  /** komuta ettiği ordu (yoksa yedekte) */
+  army: string | null;
+}
+
+/** Borç: from 'MKT' ise devlet tahvili (piyasa), değilse ülkeler arası kredi */
+export interface Loan {
+  id: string;
+  from: Tag;
+  to: Tag;
+  amount: number;
+  rate: number;
+  due: Day;
+}
+
+export type MarketGood = 'food' | 'iron' | 'coal' | 'timber' | 'oil';
+
+export interface UNResolution {
+  id: string;
+  kind: 'sanction' | 'condemn' | 'peacekeeping';
+  proposer: Tag;
+  target: Tag;
+  warId?: string;
+  day: Day;
+  expires: Day;
+  /** satın alınan oylar */
+  bought: number;
 }
 
 export interface ConstructionJob {
@@ -298,6 +350,8 @@ export interface ProvinceState {
   siege: SiegeState | null;
   /** son el değiştirme günü */
   changedDay: Day;
+  /** kültür: bölgenin halkı (tanımsızsa haritadaki köken ülkesi); asimilasyonla değişir */
+  culture?: Tag;
   /** asimilasyon: çekirdek olmaya kalan gün (yoksa süreç yok) */
   assimilating?: number;
 }
@@ -548,6 +602,8 @@ export interface GameRules {
   aiAggression: number;
   /** savaş sisi: yabancı ordu detaylarını gizle (yalnızca görsel) */
   fogOfWar: boolean;
+  /** nötr başlangıç: ilişkiler 0, ittifak ve pakt yok; dünya düzeni oyun içinde oluşur */
+  neutralStart?: boolean;
   /** öğretici modu: oyun içinde adım adım yönlendirme gösterilir */
   tutorial?: boolean;
 }
@@ -608,6 +664,22 @@ export interface GameState {
   /** Harita yeniden çizimi için sayaçlar */
   versions: { owners: number; armies: number };
   gameOver: null | { result: 'victory' | 'defeat'; reason: string; day: Day; acknowledged: boolean };
+  loans?: Loan[];
+  /** dünya pazarı: fiyat endeksleri (1 = normal) */
+  market?: { prices: Record<MarketGood, number> };
+  /** büyük güçler (ilk 8) */
+  greatPowers?: Tag[];
+  /** Birleşmiş Milletler: oyuncunun oyunu bekleyen karar ve geçmiş */
+  un?: { pending: UNResolution | null; next: Day; log: { day: Day; kind: UNResolution['kind']; target: Tag; proposer: Tag; passed: boolean; vetoBy?: Tag; yes: number; no: number }[] };
+  /** yeniden adlandırılan bölgeler */
+  provinceNames?: Record<number, string>;
+  /** zaman atlamalı tekrar: başlangıç sahipleri ve sahiplik değişimleri [tur, bölge, yeni sahip] */
+  ownerStart?: Tag[];
+  ownerLog?: [number, number, Tag][];
+  /** geri al: ülke → son ordu emrinden önceki durum */
+  undo?: Record<Tag, { turn: number; army: string; path: number[]; progress: number; mergedFrom?: string; amount?: number }>;
+  /** kurulan birlikler */
+  formed?: string[];
   /** oyuncunun tarihçesi: önemli olayların zaman çizelgesi */
   chronicle?: { day: Day; key: string; params: Record<string, string | number>; severity: 'info' | 'good' | 'bad' | 'critical' }[];
   /** Her ülke için son ekonomik kayıtlar (grafik için) */

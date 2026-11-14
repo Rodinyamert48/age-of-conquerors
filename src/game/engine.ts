@@ -10,6 +10,10 @@
  */
 import { espionageTick } from './espionage';
 import { electionTick } from './elections';
+import { financeTick, powersTick } from './finance';
+import { unTick } from './un';
+import { generalsCleanup } from './generals';
+import { COUNTRY_IDEOLOGY, DEFAULT_IDEOLOGY } from './defs/ideologies';
 import type { Country, Difficulty, GameRules, GameState, PolicyId, Tag, TimeStep, VictoryRules } from './types';
 import { POLICY_IDS, RESOURCE_IDS } from './types';
 import type { World } from './world';
@@ -196,6 +200,7 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
   for (const def of setup.countries) {
     const c = newCountry(def.tag, def.name, def.nameEn, def.flag, def.color);
     c.government = def.government;
+    c.ideology = COUNTRY_IDEOLOGY[def.tag] ?? DEFAULT_IDEOLOGY[def.government];
     c.techs = TECHS.filter((t) => t.year <= def.techYear && t.id !== NUCLEAR_TECH).map((t) => t.id).concat(def.extraTechs ?? []);
     c.nukes = def.nukes ?? 0;
     for (const [k, v] of Object.entries(def.policies ?? {})) c.policies[k as PolicyId] = v as number;
@@ -229,12 +234,15 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
     for (const a of def.armies ?? []) createArmy(ctx, def.tag, a.province, a.units, { morale: 1, experience: 0.15, name: a.name });
   }
   // İttifaklar ve anlaşmalar
-  for (const al of setup.alliances) {
+  // Nötr başlangıç: ittifaklar ve paktlar kurulmaz; ilişkiler sıfırdan başlar
+  const neutral = s.rules.neutralStart !== false;
+  for (const al of neutral ? [] : setup.alliances) {
     const id = `a${s.nextId++}`;
     s.alliances[id] = { id, name: al.name, leader: al.leader, members: al.members.slice(), founded: day - 365 };
   }
   for (const t of setup.treaties) {
     if (!s.countries[t.a] || !s.countries[t.b] || t.a === t.b) continue;
+    if (neutral && t.type !== 'trade' && t.type !== 'vassal') continue;
     s.treaties.push({ id: `t${s.nextId++}`, type: t.type, a: t.a, b: t.b, start: day - 365, end: t.years ? day + Math.round(t.years * 365.25) : null });
   }
   for (const wdef of setup.wars) {
@@ -267,6 +275,11 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
     if (!s.countries[a]?.alive || !s.countries[b]?.alive) continue;
     const base = baselineRelation(ctx, a, b);
     const ov = extra.get(k);
+    // Nötr başlangıçta yalnızca savaştaki taraflar düşmandır; diğer herkes 0
+    if (neutral) {
+      if (base <= -100) setRelation(s, a, b, -100);
+      continue;
+    }
     setRelation(s, a, b, ov !== undefined ? ov : base);
   }
 
@@ -282,6 +295,10 @@ export function createGame(world: World, opts: NewGameOptions): Ctx {
   }
   computeAllBudgets(ctx);
   s.meta.playerStartProvinces = provincesOf(ctx, opts.player).length;
+  // Zaman atlamalı tekrar için başlangıç sahipleri; büyük güç sıralaması
+  s.ownerStart = s.provinces.map((p) => p.owner);
+  s.ownerLog = [];
+  powersTick(ctx, false);
   // Otomatik araştırma ilk günden başlasın
   aiResearch(ctx, s.countries[opts.player]);
   recordHistory(ctx);
@@ -399,6 +416,9 @@ export function advanceTurn(ctx: Ctx): void {
     relationTick(ctx);
     espionageTick(ctx);
     electionTick(ctx);
+    financeTick(ctx, dateFromDay(newDay).m === 1);
+    unTick(ctx);
+    generalsCleanup(ctx);
   }
   // 6. İnşaat, asker toplama, araştırma
   ministerTick(ctx);

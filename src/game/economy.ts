@@ -74,8 +74,10 @@ export function recruitPer1000(ctx: Ctx): number {
 }
 
 export function resourcePrice(ctx: Ctx, r: ResourceId): number {
-  if (r === 'food') return (BAL.foodPriceK * ctx.s.meta.refGdpPc * 1e6) / 12;
-  return BAL.resPriceK * ctx.s.meta.refGdpPc * 1000;
+  // Dünya pazarı fiyat endeksi (savaş ve arz şoklarıyla oynar)
+  const idx = ctx.s.market?.prices[r] ?? 1;
+  if (r === 'food') return ((BAL.foodPriceK * ctx.s.meta.refGdpPc * 1e6) / 12) * idx;
+  return BAL.resPriceK * ctx.s.meta.refGdpPc * 1000 * idx;
 }
 
 /** Ücret düzeyi: zengin ülkelerde asker daha pahalı (satın alma gücü etkisi) */

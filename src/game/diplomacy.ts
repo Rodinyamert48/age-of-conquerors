@@ -28,6 +28,8 @@ import { yearsBetween } from './calendar';
 import { hashString } from './rng';
 
 import { addGrievance } from './espionage';
+import { creditorLeverage } from './finance';
+import { familyAffinity, IDEOLOGY_BY_ID } from './defs/ideologies';
 export interface Reason {
   key: string;
   value: number;
@@ -51,11 +53,15 @@ function ideologyGroup(ctx: Ctx, tag: Tag): string {
 export function ideologyAffinity(ctx: Ctx, a: Tag, b: Tag): number {
   const ga = ideologyGroup(ctx, a);
   const gb = ideologyGroup(ctx, b);
-  if (ga === gb) return 10;
+  const ia = IDEOLOGY_BY_ID[ctx.s.countries[a]?.ideology ?? ''];
+  const ib = IDEOLOGY_BY_ID[ctx.s.countries[b]?.ideology ?? ''];
+  // İdeoloji yakınlığı: aynı ideoloji ve aile yakınlaştırır, karşıt aileler uzaklaştırır
+  const extra = ia && ib ? (ia.id === ib.id ? 8 : familyAffinity(ia.family, ib.family)) : 0;
+  if (ga === gb) return 10 + extra;
   const pair = [ga, gb].sort().join('|');
-  if (pair.includes('fascist') && (pair.includes('democratic') || pair.includes('communist'))) return -25;
-  if (pair === 'communist|democratic') return -15;
-  return -8;
+  if (pair.includes('fascist') && (pair.includes('democratic') || pair.includes('communist'))) return -25 + extra;
+  if (pair === 'communist|democratic') return -15 + extra;
+  return -8 + extra;
 }
 
 /** a'nın b'ye karşı hissettiği tehdit: b'nin gücü / a'nın gücü (komşuysa) */
@@ -134,6 +140,8 @@ export function evaluateProposal(ctx: Ctx, from: Tag, to: Tag, type: DiploAction
   add('reason.reputation', fc.reputation * 0.3);
   add('reason.diplomaticTech', modsFrom.acceptance);
   if (tc.ai.rival === from) add('reason.rival', -40);
+  // Alacaklı nüfuzu: borçlu ülke alacaklısının tekliflerine daha kolay evet der
+  add('reason.creditor', creditorLeverage(ctx, from, to));
   if (tc.ai.warTarget === from) add('reason.planningWar', -100);
   const powerRatio = strategicStrength(ctx, from) / Math.max(1, strategicStrength(ctx, to));
   const threat = biggestThreat(ctx, to);

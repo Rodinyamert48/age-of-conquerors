@@ -24,6 +24,7 @@ const CASUALTY_WEIGHT: Record<UnitType, number> = {
   navy: 1,
 };
 
+import { generalMods, generalOf, generalsAfterBattle } from './generals';
 export function emptyUnits(): ArmyUnits {
   return { infantry: 0, light: 0, cavalry: 0, artillery: 0, siege: 0, armor: 0, air: 0, navy: 0 };
 }
@@ -273,7 +274,13 @@ export function predictBattle(att: SimArmy[], def: SimArmy[], sc: SimContext, se
 }
 
 export function toSim(ctx: Ctx, a: Army): SimArmy {
-  return { units: { ...a.units }, morale: a.morale, experience: a.experience, supply: a.supply, mods: getMods(ctx, a.owner) };
+  const base = getMods(ctx, a.owner);
+  const g = generalOf(ctx, a);
+  if (!g) return { units: { ...a.units }, morale: a.morale, experience: a.experience, supply: a.supply, mods: base };
+  // Generalin etkisi yalnızca komuta ettiği orduya uygulanır
+  const mods = { ...base };
+  for (const [k, v] of Object.entries(generalMods(g))) mods[k as keyof typeof mods] += v as number;
+  return { units: { ...a.units }, morale: a.morale, experience: a.experience, supply: a.supply, mods };
 }
 
 export function simContextAt(ctx: Ctx, node: number, defenderTag: Tag | null): SimContext {
@@ -481,6 +488,7 @@ function endBattle(ctx: Ctx, b: Battle, winner: 'attacker' | 'defender', att: Ar
   for (const a of [...att, ...def]) a.battle = null;
   for (const a of winners) a.experience = Math.min(1, a.experience + 0.05 + Math.min(0.1, loseSide.losses / Math.max(1, winSide.start) * 0.2));
   for (const a of losers) a.experience = Math.min(1, a.experience + 0.02);
+  generalsAfterBattle(ctx, winners, losers);
 
   // Kaybedenler geri çekilir; çekilecek yer yoksa dağılır
   for (const a of losers) {

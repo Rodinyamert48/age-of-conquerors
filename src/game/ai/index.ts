@@ -5,7 +5,7 @@
 import type { Country, Day } from '../types';
 import type { Ctx } from '../ctx';
 import { isAtWar, REBEL_TAG } from '../query';
-import { aiEconomy } from './economy';
+import { aiEconomy, aiBuild } from './economy';
 import { aiArmies, aiRebels, aiRecruit } from './military';
 import { aiDiplomacy, aiPeace } from './diplomacy';
 import { hashString } from '../rng';
@@ -25,6 +25,12 @@ export function aiTick(ctx: Ctx, newDay: Day): void {
   // İsyancılar her tur
   aiRebels(ctx);
   for (const c of Object.values(s.countries)) {
+    // Otomatik yönetim: insan oyuncu inşaatı ve/veya asker toplamayı yapay zekâya devredebilir
+    if (c.alive && c.isPlayer && c.auto && (c.auto.build || c.auto.recruit) && c.ai.nextThink <= newDay) {
+      c.ai.nextThink = newDay + thinkInterval(ctx, c);
+      if (c.auto.build) aiBuild(ctx, c, Math.max(1, Math.min(6, Math.round(provincesOf(ctx, c.tag).length / 15))));
+      if (c.auto.recruit) aiRecruit(ctx, c);
+    }
     if (!c.alive || c.isPlayer || c.tag === REBEL_TAG) continue;
     if (c.ai.nextThink > newDay) continue;
     c.ai.nextThink = newDay + thinkInterval(ctx, c);

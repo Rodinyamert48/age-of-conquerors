@@ -89,8 +89,8 @@ export const MINISTER_ROLE_NAMES: Record<MinisterRole, { tr: string; en: string 
   intelligence: { tr: 'İstihbarat Başkanı', en: 'Intelligence Chief' },
 };
 
-const FIRST = ['Ahmet', 'Mehmet', 'Ali', 'Murat', 'Kemal', 'Selim', 'Hasan', 'Emre', 'Ayşe', 'Fatma', 'Zeynep', 'Elif', 'Leyla', 'Nadia', 'Omar', 'Karim', 'Viktor', 'Ivan', 'Dmitri', 'Elena', 'Anna', 'Maria', 'John', 'Michael', 'David', 'Thomas', 'Sarah', 'Emma', 'Hans', 'Klaus', 'Pierre', 'Jean', 'Marco', 'Luca', 'Carlos', 'Diego', 'Hiroshi', 'Kenji', 'Wei', 'Chen', 'Raj', 'Arjun', 'Priya', 'Kofi', 'Amara', 'Tariq', 'Yusuf', 'Sofia'];
-const LAST = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Aydın', 'Arslan', 'Koç', 'Öztürk', 'Aksoy', 'Hassan', 'Rahman', 'Khalil', 'Petrov', 'Ivanov', 'Sokolov', 'Novak', 'Müller', 'Schmidt', 'Weber', 'Dubois', 'Moreau', 'Rossi', 'Bianchi', 'García', 'Fernández', 'Silva', 'Santos', 'Smith', 'Johnson', 'Brown', 'Taylor', 'Tanaka', 'Sato', 'Wang', 'Li', 'Zhang', 'Kim', 'Park', 'Sharma', 'Patel', 'Singh', 'Mensah', 'Okafor', 'Nasser', 'Haddad', 'Kowalski', 'Andersson'];
+export const FIRST = ['Ahmet', 'Mehmet', 'Ali', 'Murat', 'Kemal', 'Selim', 'Hasan', 'Emre', 'Ayşe', 'Fatma', 'Zeynep', 'Elif', 'Leyla', 'Nadia', 'Omar', 'Karim', 'Viktor', 'Ivan', 'Dmitri', 'Elena', 'Anna', 'Maria', 'John', 'Michael', 'David', 'Thomas', 'Sarah', 'Emma', 'Hans', 'Klaus', 'Pierre', 'Jean', 'Marco', 'Luca', 'Carlos', 'Diego', 'Hiroshi', 'Kenji', 'Wei', 'Chen', 'Raj', 'Arjun', 'Priya', 'Kofi', 'Amara', 'Tariq', 'Yusuf', 'Sofia'];
+export const LAST = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Aydın', 'Arslan', 'Koç', 'Öztürk', 'Aksoy', 'Hassan', 'Rahman', 'Khalil', 'Petrov', 'Ivanov', 'Sokolov', 'Novak', 'Müller', 'Schmidt', 'Weber', 'Dubois', 'Moreau', 'Rossi', 'Bianchi', 'García', 'Fernández', 'Silva', 'Santos', 'Smith', 'Johnson', 'Brown', 'Taylor', 'Tanaka', 'Sato', 'Wang', 'Li', 'Zhang', 'Kim', 'Park', 'Sharma', 'Patel', 'Singh', 'Mensah', 'Okafor', 'Nasser', 'Haddad', 'Kowalski', 'Andersson'];
 
 export function traitOf(role: MinisterRole, id: string): MinisterTrait | undefined {
   return MINISTER_TRAITS[role].find((x) => x.id === id);

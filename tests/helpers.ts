@@ -23,6 +23,8 @@ export function newModernGame(opts: Partial<NewGameOptions> = {}) {
     timeStep: 'day',
     victory: { mode: 'sandbox', target: 0 },
     seed: 42,
+    // Eski testler 2020 ittifak düzenine dayanır; nötr başlangıç ayrıca test edilir
+    rules: { neutralStart: false },
     ...opts,
   });
 }

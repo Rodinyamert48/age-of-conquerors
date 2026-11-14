@@ -5,6 +5,7 @@
  * bağımsızlık savaşı, diğerlerinde genel isyan.
  */
 import { assimilationTick } from './assimilation';
+import { foreignFaith } from './society';
 import type { Country, Tag } from './types';
 import { getMods, provincesOf, warsOf, armiesAt, invalidateOwnership, type Ctx } from './ctx';
 import { REBEL_TAG, armySoldiers, overlordOf } from './query';
@@ -54,6 +55,8 @@ export function provinceUnrestTarget(ctx: Ctx, p: number): number {
   const mods = getMods(ctx, ps.owner);
   let u = (60 - c.stability) * 0.5;
   if (!ps.cores.includes(ps.owner)) u += ps.assimilating !== undefined ? 15 : 25;
+  // Farklı inançtan halk daha huzursuzdur
+  if (foreignFaith(ctx, p)) u += 6;
   if (ps.controller !== ps.owner) u += 15;
   u += c.warExhaustion * 0.2;
   if (c.resources.shortage.food) u += 10;

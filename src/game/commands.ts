@@ -11,6 +11,10 @@ import { availableTechs, buildingAvailability, cancelConstruction, canResearch, 
 import { TECHS } from './defs/techs';
 import { startAssimilation } from './assimilation';
 import { spyOperation, type SpyOp } from './espionage';
+import { callLoan, divest, invest, issueBond, lend, printMoney, repayLoan, setIdeology, setOilPolicy, startProject } from './finance';
+import { assignGeneral, dismissGeneral, hireGeneral } from './generals';
+import { castVote, propose as unPropose } from './un';
+import { customizeCountry, formUnion, moveCapital, renameProvince } from './society';
 import { aiNuclear, buildNuke, launchNuke } from './nuclear';
 import { appointMinisters, ministersDue, type MinisterRole } from './ministers';
 import { BUILDING_DEFS } from './defs/buildings';
@@ -51,6 +55,27 @@ export type Command =
   | { type: 'setTimeStep'; step: TimeStep }
   | { type: 'assimilate'; province: number }
   | { type: 'spy'; op: SpyOp; target: Tag }
+  | { type: 'issueBond'; amount: number }
+  | { type: 'repayLoan'; id: string }
+  | { type: 'lend'; target: Tag; amount: number }
+  | { type: 'callLoan'; id: string }
+  | { type: 'invest'; amount: number }
+  | { type: 'divest' }
+  | { type: 'printMoney'; amount: number }
+  | { type: 'oilPolicy'; policy: 'cut' | 'normal' | 'boost' }
+  | { type: 'startProject'; id: string }
+  | { type: 'setIdeology'; id: string }
+  | { type: 'hireGeneral' }
+  | { type: 'assignGeneral'; general: string; army: string | null }
+  | { type: 'dismissGeneral'; general: string }
+  | { type: 'unPropose'; kind: 'sanction' | 'condemn' | 'peacekeeping'; target: Tag; war?: string; buy?: number }
+  | { type: 'unVote'; vote: 'yes' | 'no' | 'veto' }
+  | { type: 'formUnion'; id: string }
+  | { type: 'moveCapital'; province: number }
+  | { type: 'renameProvince'; province: number; name: string }
+  | { type: 'customizeCountry'; name?: string; flag?: string; color?: [number, number, number] }
+  | { type: 'undoMove' }
+  | { type: 'setAuto'; build?: boolean; recruit?: boolean }
   | { type: 'appointMinisters'; picks: Partial<Record<MinisterRole, number>> }
   | { type: 'buildNuke' }
   | { type: 'launchNuke'; province: number }
@@ -68,6 +93,7 @@ export type AdminOp =
   | { kind: 'research' };
 
 const ok = (data?: unknown): CommandResult => ({ ok: true, data });
+const res = (r: { ok: boolean; error?: string }): CommandResult => (r.ok ? { ok: true } : { ok: false, error: r.error ?? 'err.unknown' });
 const fail = (error: string, errorParams?: Record<string, string | number>): CommandResult => ({ ok: false, error, errorParams });
 
 export function runCommand(ctx: Ctx, cmd: Command): CommandResult {
@@ -143,9 +169,11 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
         const b = createArmy(ctx, me, a.location, take, { morale: a.morale, experience: a.experience });
         b.supply = a.supply;
         b.path = res.path;
+        (s.undo ??= {})[me] = { turn: s.turn, army: b.id, path: [], progress: 0, mergedFrom: a.id };
         invalidateArmies(ctx);
         return ok({ days: res.days, army: b.id });
       }
+      (s.undo ??= {})[me] = { turn: s.turn, army: a.id, path: a.path.slice(), progress: a.progress };
       // İlerleme yalnızca aynı ilk adıma devam ediliyorsa korunur
       if (a.path[0] !== res.path[0]) a.progress = 0;
       a.path = res.path;
@@ -356,6 +384,70 @@ function dispatch(ctx: Ctx, cmd: Command): CommandResult {
     case 'appointMinisters': {
       if (!ministersDue(ctx, me)) return fail('minister.notDue');
       appointMinisters(ctx, me, cmd.picks);
+      return ok();
+    }
+    case 'issueBond':
+      return res(issueBond(ctx, me, cmd.amount));
+    case 'repayLoan':
+      return res(repayLoan(ctx, me, cmd.id));
+    case 'lend':
+      return res(lend(ctx, me, cmd.target, cmd.amount));
+    case 'callLoan':
+      return res(callLoan(ctx, me, cmd.id));
+    case 'invest':
+      return res(invest(ctx, me, cmd.amount));
+    case 'divest':
+      return res(divest(ctx, me));
+    case 'printMoney':
+      return res(printMoney(ctx, me, cmd.amount));
+    case 'oilPolicy':
+      return res(setOilPolicy(ctx, me, cmd.policy));
+    case 'startProject':
+      return res(startProject(ctx, me, cmd.id));
+    case 'setIdeology':
+      return res(setIdeology(ctx, me, cmd.id));
+    case 'hireGeneral':
+      return res(hireGeneral(ctx, me));
+    case 'assignGeneral':
+      return res(assignGeneral(ctx, me, cmd.general, cmd.army));
+    case 'dismissGeneral':
+      return res(dismissGeneral(ctx, me, cmd.general));
+    case 'unPropose': {
+      const r = unPropose(ctx, me, cmd.kind, cmd.target, cmd.war, cmd.buy ?? 0);
+      return r.ok ? ok(r.tally ? { passed: r.tally.passed, yes: r.tally.yes.length, no: r.tally.no.length, vetoBy: r.tally.vetoBy } : { pending: true }) : fail(r.error ?? 'err.unknown');
+    }
+    case 'unVote':
+      return res(castVote(ctx, me, cmd.vote));
+    case 'formUnion':
+      return res(formUnion(ctx, me, cmd.id));
+    case 'moveCapital':
+      return res(moveCapital(ctx, me, cmd.province));
+    case 'renameProvince':
+      return res(renameProvince(ctx, me, cmd.province, cmd.name));
+    case 'customizeCountry':
+      return res(customizeCountry(ctx, me, { name: cmd.name, flag: cmd.flag, color: cmd.color }));
+    case 'setAuto': {
+      const c = s.countries[me];
+      c.auto = { build: cmd.build ?? c.auto?.build ?? false, recruit: cmd.recruit ?? c.auto?.recruit ?? false };
+      return ok();
+    }
+    case 'undoMove': {
+      // Geri al: bu turda verilen son ordu emri (bölünen askerler eski orduya döner)
+      const u = s.undo?.[me];
+      if (!u || u.turn !== s.turn) return fail('undo.nothing');
+      const a = s.armies[u.army];
+      if (!a || a.owner !== me || a.battle) return fail('undo.nothing');
+      if (u.mergedFrom) {
+        const parent = s.armies[u.mergedFrom];
+        if (!parent || parent.location !== a.location || parent.battle) return fail('undo.nothing');
+        mergeInto(ctx, parent, a);
+        if (s.armies[a.id]) delete s.armies[a.id];
+        invalidateArmies(ctx);
+      } else {
+        a.path = u.path;
+        a.progress = u.progress;
+      }
+      delete s.undo![me];
       return ok();
     }
     case 'spy': {

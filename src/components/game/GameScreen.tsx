@@ -14,6 +14,8 @@ import AdminPanel from './AdminPanel';
 import Tutorial from './Tutorial';
 import ChatPanel from './ChatPanel';
 import PerfOverlay from './PerfOverlay';
+import MapTools from './MapTools';
+import TurnSummary from './TurnSummary';
 import { listSaves, readSave } from '@/lib/saves';
 import MinisterDialog from './MinisterDialog';
 import { GameOverDialog, HoverTooltip, MapModeBar, NotificationLog, PauseMenu } from './Overlays';
@@ -185,6 +187,15 @@ export default function GameScreen() {
       const tgt = e.target as HTMLElement | null;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.tagName === 'SELECT' || tgt.isContentEditable)) return;
       if (document.querySelector('[role="dialog"]') && e.code !== s.keys.deselect) return;
+      // Ctrl+Z: son ordu emrini geri al
+      if (e.code === 'KeyZ' && (e.ctrlKey || e.metaKey) && !e.repeat) {
+        e.preventDefault();
+        void useGame
+          .getState()
+          .command({ type: 'undoMove' })
+          .then((r) => push(t(r.ok ? 'undo.done' : (r.error ?? 'undo.nothing')), r.ok ? 'good' : 'bad'));
+        return;
+      }
       // N: sıradaki orduya geç (klavye ile oynama)
       if (e.code === 'KeyN' && !document.querySelector('[role="dialog"]')) {
         const st = useGame.getState().state;
@@ -267,6 +278,8 @@ export default function GameScreen() {
             focus={ui.focus}
           />
           <MapModeBar />
+          <MapTools />
+          <TurnSummary />
           <AdminPanel />
           <Tutorial />
           <HoverTooltip />

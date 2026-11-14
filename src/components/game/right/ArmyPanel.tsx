@@ -79,6 +79,33 @@ export default function ArmyPanel() {
         {name(a.owner)} · {place(a.location)}
       </div>
       <div className="mt-1 text-xs text-gold-soft">{status}</div>
+      {mine && !a.isNavy && (
+        <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+          <span className="text-muted">{t('general.commander')}:</span>
+          <select
+            value={state.countries[me].generals?.find((g) => g.army === a.id)?.id ?? ''}
+            onChange={(e) => {
+              const prev = state.countries[me].generals?.find((g) => g.army === a.id);
+              if (e.target.value) cmd({ type: 'assignGeneral', general: e.target.value, army: a.id });
+              else if (prev) cmd({ type: 'assignGeneral', general: prev.id, army: null });
+            }}
+            className="min-w-0 flex-1 rounded border border-line-2 bg-bg-2 px-1 py-0.5"
+            aria-label={t('general.commander')}
+          >
+            <option value="">{t('general.none')}</option>
+            {(state.countries[me].generals ?? []).map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name} ({t('general.level', { n: g.level })})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {mine && state.undo?.[me]?.turn === state.turn && (
+        <Button size="sm" className="mt-1.5" onClick={() => cmd({ type: 'undoMove' }, t('undo.done'))}>
+          ↶ {t('undo.button')}
+        </Button>
+      )}
       {a.battle && (
         <Button size="sm" variant="danger" className="mt-1.5" onClick={() => ui.openRight({ kind: 'battle', id: a.battle! })}>
           {t('battle.title')}

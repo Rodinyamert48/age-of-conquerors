@@ -54,7 +54,7 @@ interface Props {
 }
 
 const geomCache = new WeakMap<GeoData, MapGeometry>();
-function geometryFor(geo: GeoData): MapGeometry {
+export function geometryFor(geo: GeoData): MapGeometry {
   let g = geomCache.get(geo);
   if (!g) geomCache.set(geo, (g = buildGeometry(geo)));
   return g;

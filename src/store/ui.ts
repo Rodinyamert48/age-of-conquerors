@@ -8,7 +8,7 @@ import type { MapMode, Tag } from '@/game/types';
 import type { FocusRequest, MapHover } from '@/components/map/MapCanvas';
 import { useSettings } from './settings';
 
-export type LeftTab = 'country' | 'armies' | 'diplomacy' | 'economy' | 'research' | 'policies' | 'wars';
+export type LeftTab = 'country' | 'armies' | 'diplomacy' | 'economy' | 'research' | 'policies' | 'wars' | 'state';
 
 export type RightView =
   | { kind: 'province'; id: number }

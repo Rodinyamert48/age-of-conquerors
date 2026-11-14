@@ -22,6 +22,7 @@ export function notificationText(n: GameNotification, t: TFunc, lang: Lang): str
     const def = getEventDef(p.event);
     p.event = def ? loc(def.title, lang) : p.event;
   }
+  if (typeof p.kind === 'string') p.kind = t(`un.kind.${p.kind}`);
   for (const k of ['amount', 'wl', 'll']) if (typeof p[k] === 'number') p[k] = formatInt(p[k] as number, lang);
   return t(n.key, p);
 }

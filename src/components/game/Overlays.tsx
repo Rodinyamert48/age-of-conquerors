@@ -15,6 +15,7 @@ import { useCommand, useReadCtx, useCountryName } from './hooks';
 import { notificationText } from './text';
 import { OnlineHostButton, OnlineHostDialog } from './OnlineDialog';
 import HistoryDialog from './HistoryDialog';
+import ReplayDialog from './ReplayDialog';
 import { quickLoad } from './GameScreen';
 import { exportSaveFile } from '@/lib/saves';
 import { formatCompact, formatDate, formatMoney } from '@/lib/format';
@@ -40,6 +41,7 @@ export function PauseMenu() {
   const [saveName, setSaveName] = useState('');
   const [onlineOpen, setOnlineOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [replayOpen, setReplayOpen] = useState(false);
   if (!state) return null;
   const c = state.countries[state.player];
   const defaultName = `${c.name} — ${formatDate(state.day, lang)}`;
@@ -47,6 +49,7 @@ export function PauseMenu() {
     <>
     <OnlineHostDialog open={onlineOpen} onClose={() => setOnlineOpen(false)} />
     <HistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
+    <ReplayDialog open={replayOpen} onClose={() => setReplayOpen(false)} />
     <Modal open={open} onClose={() => setOpen(false)} title={t('pause.title')}>
       <div className="flex flex-col gap-2 text-sm">
         <Button variant="primary" onClick={() => setOpen(false)}>
@@ -127,6 +130,14 @@ export function PauseMenu() {
           >
             {t('history.title')}
           </Button>
+          <Button
+            onClick={() => {
+              setOpen(false);
+              setReplayOpen(true);
+            }}
+          >
+            {t('replay.title')}
+          </Button>
           <OnlineHostButton
             onOpen={() => {
               setOpen(false);
@@ -166,6 +177,7 @@ export function GameOverDialog() {
   const name = useCountryName();
   const [choose, setChoose] = useState(false);
   const [history, setHistory] = useState(false);
+  const [replay, setReplay] = useState(false);
   const alive = useMemo(
     () => (state ? Object.values(state.countries).filter((c) => c.alive && c.tag !== REBEL_TAG && !c.rebelMovement).sort((a, b) => name(a.tag).localeCompare(name(b.tag), lang)) : []),
     [state, name, lang],
@@ -192,9 +204,11 @@ export function GameOverDialog() {
             </Button>
           )}
           <Button onClick={() => setHistory(true)}>{t('history.title')}</Button>
+          <Button onClick={() => setReplay(true)}>{t('replay.title')}</Button>
           <Button onClick={() => router.push('/')}>{t('gameover.toMenu')}</Button>
         </div>
         <HistoryDialog open={history} onClose={() => setHistory(false)} />
+        <ReplayDialog open={replay} onClose={() => setReplay(false)} />
         {choose && (
           <div className="max-h-64 w-full overflow-y-auto rounded border border-line bg-panel-2 p-1 text-left">
             {alive.map((c) => (
@@ -398,7 +412,7 @@ export function HoverTooltip() {
   const owner = state.countries[ps.owner];
   return (
     <div className="pointer-events-none absolute z-30 w-56 rounded border border-line-2 bg-panel-2/95 px-2.5 py-1.5 text-xs shadow-xl [@media(hover:none)]:hidden" style={{ left: Math.min(hover.x + 16, window.innerWidth - 250), top: hover.y + 14 }}>
-      <div className="font-display text-sm text-ink">{lang === 'en' ? wp.nameEn : wp.name}</div>
+      <div className="font-display text-sm text-ink">{state.provinceNames?.[hover.province] ?? (lang === 'en' ? wp.nameEn : wp.name)}</div>
       {owner && (
         <div className="mt-0.5 flex items-center gap-1.5 text-ink-2">
           <Flag code={owner.flag} className="h-3" />

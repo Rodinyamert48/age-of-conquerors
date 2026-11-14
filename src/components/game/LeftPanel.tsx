@@ -1,5 +1,5 @@
 'use client';
-import { Landmark, Swords, Handshake, FlaskConical, X, Bell, ArrowRight } from 'lucide-react';
+import { Landmark, Swords, Handshake, FlaskConical, X, Bell, ArrowRight, Scroll } from 'lucide-react';
 import { useUI, type LeftTab } from '@/store/ui';
 import { useT } from '@/i18n';
 import { useGame } from '@/store/game';
@@ -14,6 +14,9 @@ import ArmiesTab from './tabs/ArmiesTab';
 import DiplomacyTab from './tabs/DiplomacyTab';
 import ResearchTab from './tabs/ResearchTab';
 import WarsTab from './tabs/WarsTab';
+import StateTab from './tabs/StateTab';
+import { GENERAL_LIMIT, generalCost, generalMods, traitDef } from '@/game/generals';
+import { modsText } from './MinisterDialog';
 
 /** Sade menü: dört sekme (AoH2 kadar basit; ayrıntılar sekmelerin içinde katlanır) */
 const TABS: { id: LeftTab; icon: typeof Landmark; label: string }[] = [
@@ -21,6 +24,7 @@ const TABS: { id: LeftTab; icon: typeof Landmark; label: string }[] = [
   { id: 'armies', icon: Swords, label: 'tab.military' },
   { id: 'diplomacy', icon: Handshake, label: 'tab.diplomacy' },
   { id: 'research', icon: FlaskConical, label: 'tab.research' },
+  { id: 'state', icon: Scroll, label: 'tab.state' },
 ];
 
 export default function LeftPanel() {
@@ -65,10 +69,49 @@ export default function LeftPanel() {
             {tab === 'armies' && <MilitaryTab />}
             {tab === 'diplomacy' && <DiplomacyTab />}
             {tab === 'research' && <ResearchTab />}
+            {tab === 'state' && <StateTab />}
           </div>
         </aside>
       )}
     </>
+  );
+}
+
+function GeneralsCard() {
+  const t = useT();
+  const lang = useLang();
+  const state = useGame((s) => s.state);
+  const ctx = useReadCtx();
+  const cmd = useCommand();
+  if (!state || !ctx) return null;
+  const c = state.countries[state.player];
+  const list = c.generals ?? [];
+  return (
+    <Collapsible title={t('general.title')} right={<span className="tabular text-xs">{list.length}/{GENERAL_LIMIT}</span>}>
+      <p className="mb-1 text-[11px] text-muted">{t('general.hint')}</p>
+      {list.map((g) => {
+        const tr = traitDef(g.trait);
+        const army = g.army ? state.armies[g.army] : undefined;
+        return (
+          <div key={g.id} className="mb-1 rounded border border-line bg-panel-2 px-2 py-1 text-xs">
+            <div className="flex justify-between gap-2">
+              <span className="text-ink">{g.name}</span>
+              <span className="text-gold-soft">{'★'.repeat(g.level)}</span>
+            </div>
+            <div className="text-muted">
+              {tr ? (lang === 'tr' ? tr.name.tr : tr.name.en) : ''} · {army ? army.name : t('general.reserve')}
+            </div>
+            {tr && <div className="text-good">▲ {modsText(generalMods(g), t)}</div>}
+            <button type="button" className="mt-0.5 text-[11px] text-danger hover:underline" onClick={() => cmd({ type: 'dismissGeneral', general: g.id })}>
+              {t('general.dismiss')}
+            </button>
+          </div>
+        );
+      })}
+      <Button size="sm" disabled={list.length >= GENERAL_LIMIT || c.treasury < generalCost(ctx, c.tag)} onClick={() => cmd({ type: 'hireGeneral' }, t('general.hired'))}>
+        {t('general.hire')} ({formatMoney(generalCost(ctx, c.tag), lang)})
+      </Button>
+    </Collapsible>
   );
 }
 
@@ -104,6 +147,7 @@ function MilitaryTab() {
     <>
       {atWar && <WarsTab />}
       <NuclearCard />
+      <GeneralsCard />
       <ArmiesTab />
       {!atWar && (
         <Collapsible title={t('tab.wars')}>

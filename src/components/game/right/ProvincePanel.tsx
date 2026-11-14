@@ -20,6 +20,7 @@ import { canNuke } from '@/game/nuclear';
 import { formatCompact, formatInt, formatMoney, formatPercent } from '@/lib/format';
 import { provinceOutput } from '@/game/economy';
 import { ASSIMILATION_DAYS, assimilationCost, canAssimilate } from '@/game/assimilation';
+import { cultureOf, foreignFaith, moveCapitalCost, religionOf } from '@/game/society';
 
 export default function ProvincePanel({ id }: { id: number }) {
   const t = useT();
@@ -50,7 +51,7 @@ export default function ProvincePanel({ id }: { id: number }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-[0.18em] text-muted">{t('province.title')}</div>
-          <h2 className="truncate font-display text-xl text-ink">{lang === 'en' ? wp.nameEn : wp.name}</h2>
+          <h2 className="truncate font-display text-xl text-ink">{state.provinceNames?.[id] ?? (lang === 'en' ? wp.nameEn : wp.name)}</h2>
         </div>
         {ps.owner !== REBEL_TAG && owner && (
           <button type="button" onClick={() => ui.openRight({ kind: 'country', tag: ps.owner })} className="flex shrink-0 items-center gap-1.5 rounded border border-line-2 px-2 py-1 hover:border-gold-2">
@@ -166,7 +167,7 @@ export default function ProvincePanel({ id }: { id: number }) {
             <>
               <div className="flex justify-between">
                 <span className="text-muted">{t('assimilate.progress')}</span>
-                <span className="tabular">{Math.round((1 - ps.assimilating / ASSIMILATION_DAYS) * 100)}%</span>
+                <span className="tabular">{Math.max(0, Math.round((1 - ps.assimilating / ASSIMILATION_DAYS) * 100))}%</span>
               </div>
               <Bar value={ASSIMILATION_DAYS - ps.assimilating} max={ASSIMILATION_DAYS} className="mt-1" />
             </>
@@ -177,6 +178,32 @@ export default function ProvincePanel({ id }: { id: number }) {
                 {t('assimilate.start')} ({formatMoney(assimilationCost(ctx, id), lang)})
               </Button>
             </>
+          )}
+        </div>
+      )}
+      <Stat label={t('society.culture')} value={name(cultureOf(ctx, id))} tone={cultureOf(ctx, id) !== ps.owner && !ps.cores.includes(ps.owner) ? 'warn' : undefined} />
+      <Stat label={t('society.religion')} value={t(`religion.${religionOf(cultureOf(ctx, id))}`)} tone={foreignFaith(ctx, id) ? 'warn' : undefined} hint={foreignFaith(ctx, id) ? t('society.foreignFaith') : undefined} />
+      {mine && (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          <Button
+            size="sm"
+            onClick={() => {
+              const v = window.prompt(t('society.renamePrompt'), state.provinceNames?.[id] ?? wp.name);
+              if (v !== null) cmd({ type: 'renameProvince', province: id, name: v });
+            }}
+          >
+            {t('society.rename')}
+          </Button>
+          {state.countries[me].capital !== id && ps.cores.includes(me) && (
+            <Button
+              size="sm"
+              onClick={async () => {
+                const ok = await ask({ title: t('society.moveCapital'), body: t('society.moveCapitalBody', { cost: formatMoney(moveCapitalCost(ctx, me), lang) }), confirmLabel: t('common.confirm'), cancelLabel: t('common.cancel') });
+                if (ok) cmd({ type: 'moveCapital', province: id }, t('diplo.done'));
+              }}
+            >
+              {t('society.moveCapital')}
+            </Button>
           )}
         </div>
       )}

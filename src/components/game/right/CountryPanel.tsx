@@ -18,6 +18,7 @@ import { formatCompact, formatDate, formatInt, formatMoney } from '@/lib/format'
 import { BAL } from '@/game/balance';
 import { warTitle } from '../text';
 import { leaderOf } from '@/game/data/leaders';
+import { IDEOLOGY_BY_ID } from '@/game/defs/ideologies';
 
 /** Sık kullanılan iki taraflı eylemler görünür; diğerleri "Diğer eylemler" altında */
 const PRIMARY: DiploActionType[] = ['alliance', 'nap', 'trade', 'access'];
@@ -157,6 +158,10 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
           {t('minister.leader')}: {leaderOf(tag)!.name} · {leaderOf(tag)!.title[lang === 'en' ? 'en' : 'tr']}
         </div>
       )}
+      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+        {c.ideology && IDEOLOGY_BY_ID[c.ideology] && <span className="rounded bg-panel-2 px-1.5 py-0.5 text-ink-2">{lang === 'tr' ? IDEOLOGY_BY_ID[c.ideology].name.tr : IDEOLOGY_BY_ID[c.ideology].name.en}</span>}
+        {state.greatPowers?.includes(tag) && <span className="rounded bg-gold/20 px-1.5 py-0.5 text-gold">★ {t('powers.badge', { n: state.greatPowers.indexOf(tag) + 1 })}</span>}
+      </div>
       {!c.alive && <p className="mt-2 text-xs text-muted">{t('country.notAlive')}</p>}
       {c.rebelMovement && <p className="mt-2 text-xs text-warn">{t('country.rebelMovement')}</p>}
       {c.capital >= 0 && (
@@ -253,6 +258,14 @@ export default function CountryPanel({ tag }: { tag: Tag }) {
                   ) : (
                     <ActionRow label={t('action.embargo')} desc={t('action.embargo.desc')} danger onClick={() => cmd({ type: 'diplomacy', action: 'embargo', target: tag }, t('diplo.done'))} />
                   )}
+                  {[0.05, 0.2].map((k) => (
+                    <ActionRow
+                      key={k}
+                      label={`${t('finance.lend')} ${formatMoney(Math.max(0.01, state.countries[me].budget.income * 12) * k, lang)}`}
+                      desc={t('finance.lendDesc')}
+                      onClick={() => cmd({ type: 'lend', target: tag, amount: k }, t('finance.lent'))}
+                    />
+                  ))}
                   <ActionRow label={t('action.sanction')} desc={t('action.sanction.desc')} danger onClick={() => cmd({ type: 'diplomacy', action: 'sanction', target: tag }, t('diplo.done'))} />
                 </div>
               </Collapsible>

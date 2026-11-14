@@ -28,6 +28,8 @@ interface GameStore {
   worldData: WorldData | null;
   geo: GeoData | null;
   state: GameState | null;
+  /** son turun savaş özeti (kazanılan/kaybedilen bölge, muharebe, kayıp) */
+  turnSummary: { gained: number; lost: number; battlesWon: number; battlesLost: number; kills: number; casualties: number } | null;
   /** çevrimiçi oda sahibi: süzülmemiş tam durum (konuklara gönderilir) */
   rawState: GameState | null;
   upcoming: Upcoming[];
@@ -147,6 +149,7 @@ export const useGame = create<GameStore>()((set, get) => ({
   geo: null,
   state: null,
   rawState: null,
+  turnSummary: null,
   upcoming: [],
   playing: false,
   busy: false,
@@ -271,6 +274,25 @@ function onWorkerMessage(e: MessageEvent<FromWorker>) {
       if (pendingState && (msg.reason === 'new' || msg.reason === 'load')) {
         pendingState.resolve();
         pendingState = null;
+      }
+      // Tur sonu savaş özeti
+      if (prev && msg.reason === 'turn' && prev.player === msg.state.player) {
+        const me = msg.state.player;
+        const a = prev.countries[me]?.stats;
+        const b = msg.state.countries[me]?.stats;
+        if (a && b) {
+          let gained = 0;
+          let lost = 0;
+          const n = Math.min(prev.provinces.length, msg.state.provinces.length);
+          for (let i = 0; i < n; i++) {
+            const was = prev.provinces[i].controller === me;
+            const is = msg.state.provinces[i].controller === me;
+            if (is && !was) gained++;
+            else if (was && !is) lost++;
+          }
+          const sum = { gained, lost, battlesWon: b.battlesWon - a.battlesWon, battlesLost: b.battlesLost - a.battlesLost, kills: Math.round(b.kills - a.kills), casualties: Math.round(b.casualties - a.casualties) };
+          if (sum.gained || sum.lost || sum.battlesWon || sum.battlesLost || sum.casualties > 0) useGame.setState({ turnSummary: sum });
+        }
       }
       // Yeni bildirimler için ses
       if (prev && (msg.reason === 'turn' || msg.reason === 'command')) {
